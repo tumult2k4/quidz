@@ -9,7 +9,6 @@ import {
   CheckCircle2, 
   Circle, 
   Clock, 
-  LogOut, 
   BookOpen, 
   Calendar,
   TrendingUp
@@ -62,11 +61,6 @@ const UserDashboard = ({ user }: UserDashboardProps) => {
     fetchData();
   }, [user.id]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast.success("Erfolgreich abgemeldet");
-    navigate("/auth");
-  };
 
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
     const { error } = await supabase
@@ -117,7 +111,7 @@ const UserDashboard = ({ user }: UserDashboardProps) => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card shadow-soft">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-primary-foreground font-bold shadow-glow">
               {profile?.full_name?.[0]?.toUpperCase() || "U"}
@@ -127,10 +121,6 @@ const UserDashboard = ({ user }: UserDashboardProps) => {
               <p className="text-sm text-muted-foreground">Teilnehmer</p>
             </div>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Abmelden
-          </Button>
         </div>
       </header>
 
