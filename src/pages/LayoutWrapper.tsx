@@ -1,43 +1,24 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
-import UserDashboard from "@/components/dashboard/UserDashboard";
-import AdminDashboard from "@/components/dashboard/AdminDashboard";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Loader2 } from "lucide-react";
 
-const Dashboard = () => {
+const LayoutWrapper = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (!session) {
-          navigate("/auth");
-        }
-      }
-    );
-
-    const initAuth = async () => {
+    const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
 
       if (!session) {
         navigate("/auth");
         return;
       }
 
-      // Check if user is admin
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
@@ -50,7 +31,13 @@ const Dashboard = () => {
       setIsLoading(false);
     };
 
-    initAuth();
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/auth");
+      }
+    });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -61,10 +48,6 @@ const Dashboard = () => {
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
-  }
-
-  if (!user || !session) {
-    return null;
   }
 
   return (
@@ -78,11 +61,7 @@ const Dashboard = () => {
             </div>
           </header>
           <main className="flex-1 p-6 overflow-auto">
-            {isAdmin ? (
-              <AdminDashboard user={user} />
-            ) : (
-              <UserDashboard user={user} />
-            )}
+            <Outlet />
           </main>
         </div>
       </div>
@@ -90,4 +69,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default LayoutWrapper;
