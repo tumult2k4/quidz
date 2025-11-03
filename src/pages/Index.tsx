@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Users, BookOpen, Target } from "lucide-react";
+import { Users, BookOpen, Target } from "lucide-react";
+import logo from "@/assets/logoquidz.png";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -10,15 +11,13 @@ const Index = () => {
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16 md:py-24">
         <div className="max-w-4xl mx-auto text-center space-y-8">
-          <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-glow">
-            <GraduationCap className="w-10 h-10 text-primary-foreground" />
+          <div className="flex justify-center">
+            <img src={logo} alt="QUIDZ Logo" className="w-32 h-32 object-contain" />
           </div>
           
           <div className="space-y-4">
-            <h1 className="text-5xl md:text-7xl font-bold">
-              <span className="bg-gradient-to-r from-primary via-primary-glow to-secondary bg-clip-text text-transparent">
-                QUIDZ
-              </span>
+            <h1 className="text-5xl md:text-7xl font-bold text-foreground">
+              QUIDZ
             </h1>
             <p className="text-2xl md:text-3xl font-semibold text-foreground">
               Berufsintegrationsprogramm

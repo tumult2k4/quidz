@@ -8,8 +8,8 @@ import {
   Users,
   FileText,
   Settings,
-  GraduationCap,
 } from "lucide-react";
+import logo from "@/assets/logoquidz.png";
 import {
   Sidebar,
   SidebarContent,
@@ -54,15 +54,11 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-glow">
-            <GraduationCap className="w-4 h-4 text-primary-foreground" />
-          </div>
+        <div className="flex items-center gap-3">
+          <img src={logo} alt="QUIDZ Logo" className="w-10 h-10 object-contain" />
           {!collapsed && (
             <div>
-              <h2 className="font-bold text-lg bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                QUIDZ
-              </h2>
+              <h2 className="font-bold text-lg">QUIDZ</h2>
               <p className="text-xs text-muted-foreground">
                 {isAdmin ? "Admin" : "Teilnehmer"}
               </p>

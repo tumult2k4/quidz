@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { GraduationCap } from "lucide-react";
+import logo from "@/assets/logoquidz.png";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -98,11 +98,11 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted p-4">
       <Card className="w-full max-w-md shadow-card">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center shadow-glow">
-            <GraduationCap className="w-8 h-8 text-primary-foreground" />
+          <div className="flex justify-center">
+            <img src={logo} alt="QUIDZ Logo" className="w-20 h-20 object-contain" />
           </div>
           <div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <CardTitle className="text-3xl font-bold">
               QUIDZ
             </CardTitle>
             <CardDescription className="text-base mt-2">
