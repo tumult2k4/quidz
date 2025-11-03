@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Mail, Save, LogOut, Lock } from "lucide-react";
+import { User, Mail, Save, LogOut, Lock, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 
@@ -22,6 +22,7 @@ const Profile = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
@@ -115,6 +116,64 @@ const Profile = () => {
     navigate("/auth");
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Nur JPEG, PNG und WebP Dateien sind erlaubt");
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5242880) {
+      toast.error("Datei darf maximal 5MB groß sein");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Delete old avatar if exists
+      if (profile.avatar_url) {
+        const oldPath = profile.avatar_url.split('/').slice(-2).join('/');
+        await supabase.storage.from('avatars').remove([oldPath]);
+      }
+
+      // Upload new avatar
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${profile.id}/avatar.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', profile.id);
+
+      if (updateError) throw updateError;
+
+      setProfile({ ...profile, avatar_url: publicUrl });
+      toast.success("Profilbild erfolgreich aktualisiert");
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error("Fehler beim Hochladen des Profilbildes");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (loading) return <div className="p-8">Lädt...</div>;
   if (!profile) return <div className="p-8">Profil nicht gefunden</div>;
 
@@ -128,15 +187,34 @@ const Profile = () => {
       <Card className="shadow-card">
         <CardHeader>
           <div className="flex items-center gap-4">
-            <Avatar className="w-20 h-20">
-              <AvatarImage src={profile.avatar_url || undefined} />
-              <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground text-2xl">
-                {profile.full_name?.[0]?.toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="w-20 h-20">
+                <AvatarImage src={profile.avatar_url || undefined} />
+                <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground text-2xl">
+                  {profile.full_name?.[0]?.toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <Label
+                htmlFor="avatar-upload"
+                className="absolute bottom-0 right-0 cursor-pointer bg-primary text-primary-foreground rounded-full p-2 hover:bg-primary/90 transition-colors"
+              >
+                <Upload className="w-4 h-4" />
+                <Input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={handleAvatarUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </Label>
+            </div>
             <div>
               <CardTitle>{profile.full_name || "Unbekannt"}</CardTitle>
               <CardDescription>{profile.email}</CardDescription>
+              {uploading && (
+                <p className="text-xs text-muted-foreground mt-1">Wird hochgeladen...</p>
+              )}
             </div>
           </div>
         </CardHeader>

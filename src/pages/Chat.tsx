@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ interface Message {
   profiles: {
     full_name: string;
     email: string;
+    avatar_url: string | null;
   };
 }
 
@@ -60,7 +61,8 @@ const Chat = () => {
           *,
           profiles!chat_messages_user_id_fkey (
             full_name,
-            email
+            email,
+            avatar_url
           )
         `)
         .order("created_at", { ascending: true });
@@ -97,7 +99,8 @@ const Chat = () => {
                 *,
                 profiles!chat_messages_user_id_fkey (
                   full_name,
-                  email
+                  email,
+                  avatar_url
                 )
               `)
               .eq("id", payload.new.id)
@@ -188,6 +191,9 @@ const Chat = () => {
                 className={`flex gap-3 ${isOwnMessage ? "flex-row-reverse" : ""}`}
               >
                 <Avatar className="w-8 h-8">
+                  {msg.profiles.avatar_url && (
+                    <AvatarImage src={msg.profiles.avatar_url} alt={msg.profiles.full_name || msg.profiles.email} />
+                  )}
                   <AvatarFallback className="text-xs bg-primary text-primary-foreground">
                     {getInitials(msg.profiles.full_name || msg.profiles.email)}
                   </AvatarFallback>
