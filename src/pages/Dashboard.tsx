@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import UserDashboard from "@/components/dashboard/UserDashboard";
 import AdminDashboard from "@/components/dashboard/AdminDashboard";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { Loader2 } from "lucide-react";
 
@@ -72,11 +72,6 @@ const Dashboard = () => {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar isAdmin={isAdmin} />
         <div className="flex-1 flex flex-col">
-          <header className="border-b bg-card shadow-soft sticky top-0 z-10">
-            <div className="flex items-center gap-4 p-4">
-              <SidebarTrigger />
-            </div>
-          </header>
           <main className="flex-1 p-6 overflow-auto">
             {isAdmin ? (
               <AdminDashboard user={user} />

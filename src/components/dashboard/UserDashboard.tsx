@@ -11,7 +11,10 @@ import {
   Clock, 
   BookOpen, 
   Calendar,
-  TrendingUp
+  TrendingUp,
+  FileText,
+  Briefcase,
+  ArrowRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -30,9 +33,28 @@ interface Task {
   category: string | null;
 }
 
+interface Document {
+  id: string;
+  title: string;
+  description: string | null;
+  created_at: string;
+  category: string | null;
+}
+
+interface Project {
+  id: string;
+  title: string;
+  description: string | null;
+  created_at: string;
+  category: string;
+  image_url: string | null;
+}
+
 const UserDashboard = ({ user }: UserDashboardProps) => {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -55,6 +77,27 @@ const UserDashboard = ({ user }: UserDashboardProps) => {
         .order("due_date", { ascending: true });
 
       setTasks(tasksData || []);
+
+      // Fetch recent documents (last 5)
+      const { data: documentsData } = await supabase
+        .from("documents")
+        .select("*")
+        .or(`assigned_to.eq.${user.id},visibility.eq.public`)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      setDocuments(documentsData || []);
+
+      // Fetch recent projects (last 5)
+      const { data: projectsData } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      setProjects(projectsData || []);
+
       setLoading(false);
     };
 
@@ -210,6 +253,121 @@ const UserDashboard = ({ user }: UserDashboardProps) => {
             )}
           </CardContent>
         </Card>
+
+        {/* Documents and Projects Grid */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Recent Documents */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  Neue Dokumente
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/documents")}
+                >
+                  Alle
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+              <CardDescription>Zuletzt hinzugefügte Dokumente</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {documents.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">
+                  Keine Dokumente vorhanden
+                </p>
+              ) : (
+                documents.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="p-3 rounded-lg border bg-gradient-to-r from-card to-muted/10 hover:shadow-soft transition-all cursor-pointer"
+                    onClick={() => navigate("/documents")}
+                  >
+                    <h4 className="font-semibold mb-1">{doc.title}</h4>
+                    {doc.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-1">
+                        {doc.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 mt-2">
+                      {doc.category && (
+                        <Badge variant="outline" className="text-xs">
+                          {doc.category}
+                        </Badge>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(doc.created_at).toLocaleDateString("de-CH")}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Projects */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-primary" />
+                  Neue Projekte
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/my-projects")}
+                >
+                  Alle
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+              <CardDescription>Ihre neuesten Portfolio-Projekte</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {projects.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">
+                  Keine Projekte vorhanden
+                </p>
+              ) : (
+                projects.map((project) => (
+                  <div
+                    key={project.id}
+                    className="p-3 rounded-lg border bg-gradient-to-r from-card to-muted/10 hover:shadow-soft transition-all cursor-pointer"
+                    onClick={() => navigate("/my-projects")}
+                  >
+                    <div className="flex gap-3">
+                      {project.image_url && (
+                        <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-muted">
+                          <img
+                            src={project.image_url}
+                            alt={project.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold mb-1 line-clamp-1">{project.title}</h4>
+                        {project.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-1">
+                            {project.description}
+                          </p>
+                        )}
+                        <span className="text-xs text-muted-foreground mt-1 block">
+                          {new Date(project.created_at).toLocaleDateString("de-CH")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Motivational Quote */}
         <Card className="shadow-card bg-gradient-to-br from-primary/5 to-secondary/5">
