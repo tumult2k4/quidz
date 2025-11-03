@@ -11,6 +11,7 @@ import Tasks from "./pages/Tasks";
 import Documents from "./pages/Documents";
 import Absences from "./pages/Absences";
 import Profile from "./pages/Profile";
+import Chat from "./pages/Chat";
 import AdminTasks from "./pages/admin/AdminTasks";
 import AdminDocuments from "./pages/admin/AdminDocuments";
 import AdminAbsences from "./pages/admin/AdminAbsences";
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route element={<LayoutWrapper />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/chat" element={<Chat />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/documents" element={<Documents />} />
             <Route path="/absences" element={<Absences />} />

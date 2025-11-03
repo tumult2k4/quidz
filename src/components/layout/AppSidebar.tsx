@@ -8,6 +8,7 @@ import {
   Users,
   FileText,
   Settings,
+  MessageCircle,
 } from "lucide-react";
 import logo from "@/assets/logoquidz.png";
 import {
@@ -35,6 +36,7 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
 
   const userItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "Chat", url: "/chat", icon: MessageCircle },
     { title: "Aufgaben", url: "/tasks", icon: CheckSquare },
     { title: "Dokumente", url: "/documents", icon: BookOpen },
     { title: "Absenzen", url: "/absences", icon: Calendar },
@@ -43,6 +45,7 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
 
   const adminItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "Chat", url: "/chat", icon: MessageCircle },
     { title: "Aufgaben", url: "/admin/tasks", icon: CheckSquare },
     { title: "Dokumente", url: "/admin/documents", icon: FileText },
     { title: "Absenzen", url: "/admin/absences", icon: Calendar },
