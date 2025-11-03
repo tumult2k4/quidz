@@ -21,27 +21,40 @@ const AdminAbsences = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchAbsences = async () => {
-    const { data, error } = await supabase
-      .from("absences")
-      .select(`
-        id,
-        date,
-        reason,
-        comment,
-        approved,
-        created_at,
-        user_id,
-        profiles!absences_user_id_fkey(full_name, email)
-      `)
-      .order("date", { ascending: false });
+    // Fetch absences and profiles separately
+    const [absencesRes, profilesRes] = await Promise.all([
+      supabase
+        .from("absences")
+        .select("*")
+        .order("date", { ascending: false }),
+      supabase
+        .from("profiles")
+        .select("id, full_name, email"),
+    ]);
 
-    if (error) {
+    if (absencesRes.error) {
       toast.error("Fehler beim Laden der Absenzen");
-      console.error("Absences error:", error);
+      console.error("Absences error:", absencesRes.error);
+      return;
+    }
+    if (profilesRes.error) {
+      toast.error("Fehler beim Laden der Profile");
+      console.error("Profiles error:", profilesRes.error);
       return;
     }
 
-    setAbsences(data as any || []);
+    // Create a map of user profiles for quick lookup
+    const profilesMap = new Map(
+      (profilesRes.data || []).map(profile => [profile.id, profile])
+    );
+
+    // Merge absences with user profiles
+    const absencesWithProfiles = (absencesRes.data || []).map(absence => ({
+      ...absence,
+      profiles: absence.user_id ? profilesMap.get(absence.user_id) : null,
+    }));
+
+    setAbsences(absencesWithProfiles);
     setLoading(false);
   };
 

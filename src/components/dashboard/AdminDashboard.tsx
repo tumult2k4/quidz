@@ -52,29 +52,45 @@ const AdminDashboard = ({ user }: AdminDashboardProps) => {
         pendingAbsences: absencesRes.data?.length || 0,
       });
 
-      // Fetch recent tasks with user info
-      const { data: recentTasksData } = await supabase
-        .from("tasks")
-        .select(`
-          *,
-          profiles!tasks_assigned_to_fkey(full_name)
-        `)
-        .order("created_at", { ascending: false })
-        .limit(5);
+      // Fetch recent tasks and profiles separately
+      const [recentTasksRes, profilesRes] = await Promise.all([
+        supabase
+          .from("tasks")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase
+          .from("profiles")
+          .select("id, full_name, email"),
+      ]);
 
-      setRecentTasks(recentTasksData || []);
+      // Create a map of user profiles for quick lookup
+      const profilesMap = new Map(
+        (profilesRes.data || []).map(profile => [profile.id, profile])
+      );
 
-      // Fetch recent absences with user info
+      // Merge tasks with user profiles
+      const tasksWithProfiles = (recentTasksRes.data || []).map(task => ({
+        ...task,
+        profiles: task.assigned_to ? profilesMap.get(task.assigned_to) : null,
+      }));
+
+      setRecentTasks(tasksWithProfiles);
+
+      // Fetch recent absences
       const { data: absencesData } = await supabase
         .from("absences")
-        .select(`
-          *,
-          profiles!absences_user_id_fkey(full_name)
-        `)
+        .select("*")
         .order("created_at", { ascending: false })
         .limit(5);
 
-      setRecentAbsences(absencesData || []);
+      // Merge absences with user profiles
+      const absencesWithProfiles = (absencesData || []).map(absence => ({
+        ...absence,
+        profiles: absence.user_id ? profilesMap.get(absence.user_id) : null,
+      }));
+
+      setRecentAbsences(absencesWithProfiles);
       setLoading(false);
     };
 

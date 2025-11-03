@@ -57,19 +57,15 @@ const AdminTasks = () => {
   });
 
   const fetchData = async () => {
+    // Fetch tasks and profiles separately
     const [tasksRes, usersRes] = await Promise.all([
-      supabase.from("tasks").select(`
-        id,
-        title,
-        description,
-        due_date,
-        status,
-        priority,
-        category,
-        assigned_to,
-        profiles!tasks_assigned_to_fkey(full_name)
-      `).order("created_at", { ascending: false }),
-      supabase.from("profiles").select("id, full_name, email"),
+      supabase
+        .from("tasks")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("profiles")
+        .select("id, full_name, email"),
     ]);
 
     if (tasksRes.error) {
@@ -83,7 +79,18 @@ const AdminTasks = () => {
       return;
     }
 
-    setTasks(tasksRes.data as any || []);
+    // Create a map of user profiles for quick lookup
+    const profilesMap = new Map(
+      (usersRes.data || []).map(profile => [profile.id, profile])
+    );
+
+    // Merge tasks with user profiles
+    const tasksWithProfiles = (tasksRes.data || []).map(task => ({
+      ...task,
+      profiles: task.assigned_to ? profilesMap.get(task.assigned_to) : null,
+    }));
+
+    setTasks(tasksWithProfiles);
     setUsers(usersRes.data || []);
     setLoading(false);
   };
