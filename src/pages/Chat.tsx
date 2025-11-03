@@ -19,7 +19,7 @@ interface Message {
     full_name: string;
     email: string;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 const Chat = () => {
@@ -185,17 +185,20 @@ const Chat = () => {
         <div className="space-y-4">
           {messages.map((msg) => {
             const isOwnMessage = msg.user_id === currentUserId;
+            const userName = msg.profiles?.full_name || msg.profiles?.email || "Unbekannter Nutzer";
+            const avatarUrl = msg.profiles?.avatar_url;
+            
             return (
               <div
                 key={msg.id}
                 className={`flex gap-3 ${isOwnMessage ? "flex-row-reverse" : ""}`}
               >
                 <Avatar className="w-8 h-8">
-                  {msg.profiles.avatar_url && (
-                    <AvatarImage src={msg.profiles.avatar_url} alt={msg.profiles.full_name || msg.profiles.email} />
+                  {avatarUrl && (
+                    <AvatarImage src={avatarUrl} alt={userName} />
                   )}
                   <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                    {getInitials(msg.profiles.full_name || msg.profiles.email)}
+                    {getInitials(userName)}
                   </AvatarFallback>
                 </Avatar>
                 <div
@@ -212,7 +215,7 @@ const Chat = () => {
                   >
                     {!isOwnMessage && (
                       <p className="text-xs font-semibold mb-1">
-                        {msg.profiles.full_name || msg.profiles.email}
+                        {userName}
                       </p>
                     )}
                     <p className="text-sm break-words">{msg.message}</p>
