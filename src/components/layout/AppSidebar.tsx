@@ -20,6 +20,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -54,16 +55,19 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b p-4">
-        <div className="flex items-center gap-3">
-          <img src={logo} alt="QUIDZ Logo" className="w-10 h-10 object-contain" />
-          {!collapsed && (
-            <div>
-              <h2 className="font-bold text-lg">QUIDZ</h2>
-              <p className="text-xs text-muted-foreground">
-                {isAdmin ? "Admin" : "Teilnehmer"}
-              </p>
-            </div>
-          )}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="QUIDZ Logo" className="w-10 h-10 object-contain" />
+            {!collapsed && (
+              <div>
+                <h2 className="font-bold text-lg">QUIDZ</h2>
+                <p className="text-xs text-muted-foreground">
+                  {isAdmin ? "Admin" : "Teilnehmer"}
+                </p>
+              </div>
+            )}
+          </div>
+          <SidebarTrigger />
         </div>
       </SidebarHeader>
 
