@@ -31,12 +31,13 @@ const AdminAbsences = () => {
         approved,
         created_at,
         user_id,
-        profiles!inner(full_name, email)
+        profiles!absences_user_id_fkey(full_name, email)
       `)
       .order("date", { ascending: false });
 
     if (error) {
       toast.error("Fehler beim Laden der Absenzen");
+      console.error("Absences error:", error);
       return;
     }
 

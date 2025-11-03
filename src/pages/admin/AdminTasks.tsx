@@ -67,17 +67,19 @@ const AdminTasks = () => {
         priority,
         category,
         assigned_to,
-        profiles!inner(full_name)
+        profiles!tasks_assigned_to_fkey(full_name)
       `).order("created_at", { ascending: false }),
       supabase.from("profiles").select("id, full_name, email"),
     ]);
 
     if (tasksRes.error) {
       toast.error("Fehler beim Laden der Aufgaben");
+      console.error("Tasks error:", tasksRes.error);
       return;
     }
     if (usersRes.error) {
       toast.error("Fehler beim Laden der User");
+      console.error("Users error:", usersRes.error);
       return;
     }
 
