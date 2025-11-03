@@ -9,6 +9,8 @@ import {
   FileText,
   Settings,
   MessageCircle,
+  FolderKanban,
+  Sparkles,
 } from "lucide-react";
 import logo from "@/assets/logoquidz.png";
 import {
@@ -40,6 +42,8 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
     { title: "Aufgaben", url: "/tasks", icon: CheckSquare },
     { title: "Dokumente", url: "/documents", icon: BookOpen },
     { title: "Absenzen", url: "/absences", icon: Calendar },
+    { title: "Portfolio", url: "/portfolio", icon: Sparkles },
+    { title: "Meine Projekte", url: "/my-projects", icon: FolderKanban },
     { title: "Profil", url: "/profile", icon: User },
   ];
 
@@ -50,6 +54,8 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
     { title: "Dokumente", url: "/admin/documents", icon: FileText },
     { title: "Absenzen", url: "/admin/absences", icon: Calendar },
     { title: "Teilnehmende", url: "/admin/users", icon: Users },
+    { title: "Portfolio", url: "/portfolio", icon: Sparkles },
+    { title: "Meine Projekte", url: "/my-projects", icon: FolderKanban },
     { title: "Einstellungen", url: "/admin/settings", icon: Settings },
   ];
 

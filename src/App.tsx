@@ -12,6 +12,8 @@ import Documents from "./pages/Documents";
 import Absences from "./pages/Absences";
 import Profile from "./pages/Profile";
 import Chat from "./pages/Chat";
+import MyProjects from "./pages/MyProjects";
+import PortfolioGallery from "./pages/PortfolioGallery";
 import AdminTasks from "./pages/admin/AdminTasks";
 import AdminDocuments from "./pages/admin/AdminDocuments";
 import AdminAbsences from "./pages/admin/AdminAbsences";
@@ -37,6 +39,8 @@ const App = () => (
             <Route path="/documents" element={<Documents />} />
             <Route path="/absences" element={<Absences />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/portfolio" element={<PortfolioGallery />} />
+            <Route path="/my-projects" element={<MyProjects />} />
             <Route path="/admin/tasks" element={<AdminTasks />} />
             <Route path="/admin/documents" element={<AdminDocuments />} />
             <Route path="/admin/absences" element={<AdminAbsences />} />
