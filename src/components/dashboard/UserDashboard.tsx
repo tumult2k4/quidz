@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   CheckCircle2, 
   Circle, 
@@ -156,9 +157,12 @@ const UserDashboard = ({ user }: UserDashboardProps) => {
       <header className="border-b bg-card shadow-soft">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-primary-foreground font-bold shadow-glow">
-              {profile?.full_name?.[0]?.toUpperCase() || "U"}
-            </div>
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={profile?.avatar_url || ""} />
+              <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground font-bold shadow-glow">
+                {profile?.full_name?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
             <div>
               <h1 className="text-xl font-bold">Willkommen, {profile?.full_name || "User"}!</h1>
               <p className="text-sm text-muted-foreground">Teilnehmer</p>
