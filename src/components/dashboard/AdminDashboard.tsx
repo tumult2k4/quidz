@@ -197,7 +197,7 @@ const AdminDashboard = ({ user }: AdminDashboardProps) => {
                 </CardTitle>
                 <CardDescription>Zuletzt erstellte Aufgaben</CardDescription>
               </div>
-              <Button size="sm">
+              <Button size="sm" onClick={() => navigate("/admin/tasks")}>
                 <Plus className="w-4 h-4 mr-2" />
                 Neue Aufgabe
               </Button>

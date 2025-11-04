@@ -19,6 +19,8 @@ import AdminDocuments from "./pages/admin/AdminDocuments";
 import AdminAbsences from "./pages/admin/AdminAbsences";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminTools from "./pages/admin/AdminTools";
+import Tools from "./pages/Tools";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +48,8 @@ const App = () => (
             <Route path="/admin/absences" element={<AdminAbsences />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/admin/tools" element={<AdminTools />} />
+            <Route path="/tools" element={<Tools />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

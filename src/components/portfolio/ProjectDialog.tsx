@@ -19,7 +19,6 @@ interface Project {
   tags: string[];
   image_url: string | null;
   project_url: string | null;
-  github_url: string | null;
   featured: boolean;
   published: boolean;
 }
@@ -39,7 +38,6 @@ export function ProjectDialog({ open, onOpenChange, project, onSuccess }: Projec
     description: "",
     category: "other",
     project_url: "",
-    github_url: "",
     published: true,
     featured: false,
   });
@@ -55,7 +53,6 @@ export function ProjectDialog({ open, onOpenChange, project, onSuccess }: Projec
         description: project.description || "",
         category: project.category,
         project_url: project.project_url || "",
-        github_url: project.github_url || "",
         published: project.published,
         featured: project.featured,
       });
@@ -72,7 +69,6 @@ export function ProjectDialog({ open, onOpenChange, project, onSuccess }: Projec
       description: "",
       category: "other",
       project_url: "",
-      github_url: "",
       published: true,
       featured: false,
     });
@@ -168,7 +164,6 @@ export function ProjectDialog({ open, onOpenChange, project, onSuccess }: Projec
         description: formData.description,
         category: formData.category as any,
         project_url: formData.project_url || null,
-        github_url: formData.github_url || null,
         published: formData.published,
         featured: formData.featured,
         tags,
@@ -337,28 +332,15 @@ export function ProjectDialog({ open, onOpenChange, project, onSuccess }: Projec
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="project_url">Projekt-URL</Label>
-              <Input
-                id="project_url"
-                type="url"
-                value={formData.project_url}
-                onChange={(e) => setFormData({ ...formData, project_url: e.target.value })}
-                placeholder="https://..."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="github_url">GitHub-URL</Label>
-              <Input
-                id="github_url"
-                type="url"
-                value={formData.github_url}
-                onChange={(e) => setFormData({ ...formData, github_url: e.target.value })}
-                placeholder="https://github.com/..."
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="project_url">Projekt-URL</Label>
+            <Input
+              id="project_url"
+              type="url"
+              value={formData.project_url}
+              onChange={(e) => setFormData({ ...formData, project_url: e.target.value })}
+              placeholder="https://..."
+            />
           </div>
 
           <div className="flex items-center justify-between">

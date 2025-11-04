@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Trash2, Edit } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Users, Trash2, X, Upload, Link as LinkIcon, Image as ImageIcon, File } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -33,6 +34,10 @@ interface Task {
   priority: string;
   category: string | null;
   assigned_to: string | null;
+  assign_to_all: boolean;
+  links: string[];
+  image_url: string | null;
+  file_url: string | null;
   profiles?: { full_name: string | null };
 }
 
@@ -47,6 +52,8 @@ const AdminTasks = () => {
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [linkInput, setLinkInput] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -54,10 +61,13 @@ const AdminTasks = () => {
     priority: "medium",
     category: "",
     assigned_to: "",
+    assign_to_all: false,
+    links: [] as string[],
+    image_url: "",
+    file_url: "",
   });
 
   const fetchData = async () => {
-    // Fetch tasks and profiles separately
     const [tasksRes, usersRes] = await Promise.all([
       supabase
         .from("tasks")
@@ -79,12 +89,10 @@ const AdminTasks = () => {
       return;
     }
 
-    // Create a map of user profiles for quick lookup
     const profilesMap = new Map(
       (usersRes.data || []).map(profile => [profile.id, profile])
     );
 
-    // Merge tasks with user profiles
     const tasksWithProfiles = (tasksRes.data || []).map(task => ({
       ...task,
       profiles: task.assigned_to ? profilesMap.get(task.assigned_to) : null,
@@ -99,28 +107,127 @@ const AdminTasks = () => {
     fetchData();
   }, []);
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Bitte nur Bilddateien hochladen");
+      return;
+    }
+
+    setUploading(true);
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("project-images")
+      .upload(fileName, file);
+
+    if (uploadError) {
+      toast.error("Fehler beim Hochladen");
+      setUploading(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("project-images")
+      .getPublicUrl(fileName);
+
+    setFormData({ ...formData, image_url: publicUrl });
+    setUploading(false);
+    toast.success("Bild hochgeladen");
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("documents")
+      .upload(fileName, file);
+
+    if (uploadError) {
+      toast.error("Fehler beim Hochladen");
+      setUploading(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("documents")
+      .getPublicUrl(fileName);
+
+    setFormData({ ...formData, file_url: publicUrl });
+    setUploading(false);
+    toast.success("Datei hochgeladen");
+  };
+
+  const addLink = () => {
+    if (linkInput.trim() && !formData.links.includes(linkInput.trim())) {
+      setFormData({ ...formData, links: [...formData.links, linkInput.trim()] });
+      setLinkInput("");
+    }
+  };
+
+  const removeLink = (link: string) => {
+    setFormData({ ...formData, links: formData.links.filter(l => l !== link) });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase.from("tasks").insert({
-      title: formData.title,
-      description: formData.description || null,
-      due_date: formData.due_date || null,
-      priority: formData.priority,
-      category: formData.category || null,
-      assigned_to: formData.assigned_to || null,
-      created_by: user.id,
-      status: "open",
-    });
+    if (formData.assign_to_all) {
+      // Bulk insert for all users
+      const tasksToInsert = users.map(u => ({
+        title: formData.title,
+        description: formData.description || null,
+        due_date: formData.due_date || null,
+        priority: formData.priority,
+        category: formData.category || null,
+        assigned_to: u.id,
+        assign_to_all: true,
+        links: formData.links,
+        image_url: formData.image_url || null,
+        file_url: formData.file_url || null,
+        created_by: user.id,
+        status: "open",
+      }));
 
-    if (error) {
-      toast.error("Fehler beim Erstellen der Aufgabe");
-      return;
+      const { error } = await supabase.from("tasks").insert(tasksToInsert);
+      if (error) {
+        toast.error("Fehler beim Erstellen der Aufgaben");
+        return;
+      }
+      toast.success(`Aufgabe an ${users.length} Teilnehmer zugewiesen`);
+    } else {
+      const { error } = await supabase.from("tasks").insert({
+        title: formData.title,
+        description: formData.description || null,
+        due_date: formData.due_date || null,
+        priority: formData.priority,
+        category: formData.category || null,
+        assigned_to: formData.assigned_to || null,
+        assign_to_all: false,
+        links: formData.links,
+        image_url: formData.image_url || null,
+        file_url: formData.file_url || null,
+        created_by: user.id,
+        status: "open",
+      });
+
+      if (error) {
+        toast.error("Fehler beim Erstellen der Aufgabe");
+        return;
+      }
+      toast.success("Aufgabe erfolgreich erstellt");
     }
 
-    toast.success("Aufgabe erfolgreich erstellt");
     setIsDialogOpen(false);
     setFormData({
       title: "",
@@ -129,7 +236,12 @@ const AdminTasks = () => {
       priority: "medium",
       category: "",
       assigned_to: "",
+      assign_to_all: false,
+      links: [],
+      image_url: "",
+      file_url: "",
     });
+    setLinkInput("");
     fetchData();
   };
 
@@ -159,31 +271,32 @@ const AdminTasks = () => {
               Neue Aufgabe
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Neue Aufgabe erstellen</DialogTitle>
               <DialogDescription>Erstellen Sie eine neue Aufgabe für Teilnehmende</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Titel *</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Beschreibung</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                />
+              </div>
+              
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2 col-span-2">
-                  <Label htmlFor="title">Titel *</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2 col-span-2">
-                  <Label htmlFor="description">Beschreibung</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="due_date">Fälligkeitsdatum</Label>
                   <Input
@@ -206,15 +319,32 @@ const AdminTasks = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Kategorie</Label>
-                  <Input
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    placeholder="z.B. Digitalität"
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Kategorie</Label>
+                <Input
+                  id="category"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  placeholder="z.B. Digitalität"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="assign_to_all"
+                    checked={formData.assign_to_all}
+                    onCheckedChange={(checked) => setFormData({ ...formData, assign_to_all: checked as boolean, assigned_to: "" })}
                   />
+                  <Label htmlFor="assign_to_all" className="cursor-pointer">
+                    An alle Teilnehmer zuweisen
+                  </Label>
                 </div>
+              </div>
+
+              {!formData.assign_to_all && (
                 <div className="space-y-2">
                   <Label htmlFor="assigned_to">Zugewiesen an</Label>
                   <Select value={formData.assigned_to} onValueChange={(value) => setFormData({ ...formData, assigned_to: value })}>
@@ -230,9 +360,88 @@ const AdminTasks = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Links</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={linkInput}
+                    onChange={(e) => setLinkInput(e.target.value)}
+                    placeholder="https://..."
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addLink())}
+                  />
+                  <Button type="button" onClick={addLink} variant="outline">
+                    <LinkIcon className="w-4 h-4 mr-1" />
+                    Hinzufügen
+                  </Button>
+                </div>
+                {formData.links.length > 0 && (
+                  <div className="space-y-1 mt-2">
+                    {formData.links.map((link, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2 border rounded">
+                        <LinkIcon className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm flex-1 truncate">{link}</span>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeLink(link)}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Bild (optional)</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploading}
+                  />
+                  {formData.image_url && (
+                    <div className="relative w-20 h-20">
+                      <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover rounded" />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 w-6 h-6"
+                        onClick={() => setFormData({ ...formData, image_url: "" })}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Datei (optional)</Label>
+                  <Input
+                    type="file"
+                    onChange={handleFileUpload}
+                    disabled={uploading}
+                  />
+                  {formData.file_url && (
+                    <div className="flex items-center gap-2 p-2 border rounded">
+                      <File className="w-4 h-4" />
+                      <span className="text-sm flex-1 truncate">Datei hochgeladen</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFormData({ ...formData, file_url: "" })}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex gap-2">
-                <Button type="submit" className="flex-1">Aufgabe erstellen</Button>
+                <Button type="submit" className="flex-1" disabled={uploading}>Aufgabe erstellen</Button>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Abbrechen
                 </Button>
@@ -259,17 +468,46 @@ const AdminTasks = () => {
                     {task.description && (
                       <CardDescription className="mb-3">{task.description}</CardDescription>
                     )}
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 mb-3">
                       <Badge variant={task.status === "completed" ? "default" : "outline"}>
                         {task.status === "completed" ? "Erledigt" : task.status === "in_progress" ? "In Arbeit" : "Offen"}
                       </Badge>
                       <Badge variant={task.priority === "high" ? "destructive" : "secondary"}>
                         {task.priority === "high" ? "Hoch" : task.priority === "medium" ? "Mittel" : "Niedrig"}
                       </Badge>
-                      {task.profiles?.full_name && (
+                      {task.assign_to_all ? (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          Alle Teilnehmer
+                        </Badge>
+                      ) : task.profiles?.full_name && (
                         <Badge variant="outline" className="flex items-center gap-1">
                           <Users className="w-3 h-3" />
                           {task.profiles.full_name}
+                        </Badge>
+                      )}
+                    </div>
+                    {task.links && task.links.length > 0 && (
+                      <div className="space-y-1 mb-2">
+                        {task.links.map((link, idx) => (
+                          <a key={idx} href={link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary hover:underline">
+                            <LinkIcon className="w-3 h-3" />
+                            {link}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-2 flex-wrap">
+                      {task.image_url && (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <ImageIcon className="w-3 h-3" />
+                          Bild
+                        </Badge>
+                      )}
+                      {task.file_url && (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <File className="w-3 h-3" />
+                          Datei
                         </Badge>
                       )}
                     </div>

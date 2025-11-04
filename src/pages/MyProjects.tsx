@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, ExternalLink, Github, Eye, EyeOff } from "lucide-react";
+import { Plus, Edit, Trash2, ExternalLink, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ProjectDialog } from "@/components/portfolio/ProjectDialog";
 
@@ -15,7 +15,6 @@ interface Project {
   tags: string[];
   image_url: string | null;
   project_url: string | null;
-  github_url: string | null;
   featured: boolean;
   published: boolean;
   created_at: string;
@@ -214,18 +213,6 @@ const MyProjects = () => {
                       >
                         <ExternalLink className="w-4 h-4 mr-1" />
                         Demo
-                      </a>
-                    </Button>
-                  )}
-                  {project.github_url && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={project.github_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Github className="w-4 h-4 mr-1" />
-                        Code
                       </a>
                     </Button>
                   )}

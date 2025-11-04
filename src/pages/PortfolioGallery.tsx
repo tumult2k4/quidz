@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ExternalLink, Github, Heart, Search } from "lucide-react";
+import { ExternalLink, Heart, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Project {
@@ -17,7 +17,6 @@ interface Project {
   tags: string[];
   image_url: string | null;
   project_url: string | null;
-  github_url: string | null;
   created_at: string;
   profiles: {
     full_name: string;
@@ -272,17 +271,6 @@ const PortfolioGallery = () => {
                           rel="noopener noreferrer"
                         >
                           <ExternalLink className="w-4 h-4" />
-                        </a>
-                      </Button>
-                    )}
-                    {project.github_url && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a
-                          href={project.github_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Github className="w-4 h-4" />
                         </a>
                       </Button>
                     )}

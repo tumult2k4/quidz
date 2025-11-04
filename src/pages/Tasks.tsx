@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Circle, Clock, Calendar, TrendingUp } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Calendar, TrendingUp, Link as LinkIcon, Image as ImageIcon, File } from "lucide-react";
 import { toast } from "sonner";
 
 interface Task {
@@ -15,6 +15,8 @@ interface Task {
   priority: string;
   category: string | null;
   file_url: string | null;
+  image_url: string | null;
+  links: string[];
 }
 
 const Tasks = () => {
@@ -135,37 +137,74 @@ const Tasks = () => {
                     >
                       {getStatusIcon(task.status)}
                     </button>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-2">{task.title}</h3>
-                      {task.description && (
-                        <p className="text-muted-foreground mb-3">{task.description}</p>
-                      )}
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant={getPriorityColor(task.priority)}>
-                          {task.priority === "high" ? "Hoch" :
-                           task.priority === "medium" ? "Mittel" : "Niedrig"}
-                        </Badge>
-                        {task.category && (
-                          <Badge variant="outline">{task.category}</Badge>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg mb-2">{task.title}</h3>
+                        {task.description && (
+                          <p className="text-muted-foreground mb-3">{task.description}</p>
                         )}
-                        {task.due_date && (
-                          <Badge variant="outline" className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(task.due_date).toLocaleDateString("de-CH")}
+                        
+                        {task.image_url && (
+                          <div className="mb-3">
+                            <img src={task.image_url} alt={task.title} className="w-full max-w-md h-auto rounded border" />
+                          </div>
+                        )}
+                        
+                        {task.links && task.links.length > 0 && (
+                          <div className="mb-3 space-y-1">
+                            {task.links.map((link, idx) => (
+                              <a
+                                key={idx}
+                                href={link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-sm text-primary hover:underline"
+                              >
+                                <LinkIcon className="w-3 h-3" />
+                                {link}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                        
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          <Badge variant={getPriorityColor(task.priority)}>
+                            {task.priority === "high" ? "Hoch" :
+                             task.priority === "medium" ? "Mittel" : "Niedrig"}
                           </Badge>
+                          {task.category && (
+                            <Badge variant="outline">{task.category}</Badge>
+                          )}
+                          {task.due_date && (
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(task.due_date).toLocaleDateString("de-CH")}
+                            </Badge>
+                          )}
+                          {task.image_url && (
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <ImageIcon className="w-3 h-3" />
+                              Bild
+                            </Badge>
+                          )}
+                          {task.file_url && (
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <File className="w-3 h-3" />
+                              Datei
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {task.file_url && (
+                          <a
+                            href={task.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline inline-block"
+                          >
+                            Anhang öffnen
+                          </a>
                         )}
                       </div>
-                      {task.file_url && (
-                        <a
-                          href={task.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline mt-2 inline-block"
-                        >
-                          Anhang öffnen
-                        </a>
-                      )}
-                    </div>
                   </div>
                 </div>
               </CardContent>

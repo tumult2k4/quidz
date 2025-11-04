@@ -145,6 +145,38 @@ export type Database = {
         }
         Relationships: []
       }
+      project_documents: {
+        Row: {
+          created_at: string | null
+          file_url: string
+          id: string
+          project_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          file_url: string
+          id?: string
+          project_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          file_url?: string
+          id?: string
+          project_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_likes: {
         Row: {
           created_at: string
@@ -187,7 +219,6 @@ export type Database = {
           created_at: string
           description: string | null
           featured: boolean | null
-          github_url: string | null
           id: string
           image_url: string | null
           project_url: string | null
@@ -202,7 +233,6 @@ export type Database = {
           created_at?: string
           description?: string | null
           featured?: boolean | null
-          github_url?: string | null
           id?: string
           image_url?: string | null
           project_url?: string | null
@@ -217,7 +247,6 @@ export type Database = {
           created_at?: string
           description?: string | null
           featured?: boolean | null
-          github_url?: string | null
           id?: string
           image_url?: string | null
           project_url?: string | null
@@ -239,6 +268,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          assign_to_all: boolean | null
           assigned_to: string | null
           category: string | null
           created_at: string | null
@@ -247,12 +277,15 @@ export type Database = {
           due_date: string | null
           file_url: string | null
           id: string
+          image_url: string | null
+          links: string[] | null
           priority: string | null
           status: string | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          assign_to_all?: boolean | null
           assigned_to?: string | null
           category?: string | null
           created_at?: string | null
@@ -261,12 +294,15 @@ export type Database = {
           due_date?: string | null
           file_url?: string | null
           id?: string
+          image_url?: string | null
+          links?: string[] | null
           priority?: string | null
           status?: string | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          assign_to_all?: boolean | null
           assigned_to?: string | null
           category?: string | null
           created_at?: string | null
@@ -275,10 +311,45 @@ export type Database = {
           due_date?: string | null
           file_url?: string | null
           id?: string
+          image_url?: string | null
+          links?: string[] | null
           priority?: string | null
           status?: string | null
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tools: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          title: string
+          updated_at: string | null
+          web_link: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          title: string
+          updated_at?: string | null
+          web_link: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          title?: string
+          updated_at?: string | null
+          web_link?: string
         }
         Relationships: []
       }
