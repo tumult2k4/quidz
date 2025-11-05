@@ -44,6 +44,54 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_chat_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_settings: {
+        Row: {
+          bot_name: string
+          created_at: string | null
+          id: string
+          system_prompt: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bot_name?: string
+          created_at?: string | null
+          id?: string
+          system_prompt?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bot_name?: string
+          created_at?: string | null
+          id?: string
+          system_prompt?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string
