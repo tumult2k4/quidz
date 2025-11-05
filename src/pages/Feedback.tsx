@@ -261,7 +261,7 @@ export default function Feedback() {
                   
                   <Button 
                     onClick={() => handleSubmitAnswer(question.id, question.type)}
-                    disabled={!answers[question.id] && question.type !== "mood"}
+                    disabled={question.type !== "mood" && !answers[question.id]}
                   >
                     Absenden
                   </Button>
