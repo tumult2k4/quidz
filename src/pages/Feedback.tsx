@@ -26,7 +26,7 @@ export default function Feedback() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [moodValue, setMoodValue] = useState([3]);
+  const [moodValue, setMoodValue] = useState([5]);
 
   const { data: user } = useQuery({
     queryKey: ["user"],
@@ -151,7 +151,7 @@ export default function Feedback() {
     if (type === "mood") {
       submitAnswerMutation.mutate({
         questionId,
-        moodValue: parseInt(answers[questionId] || "3"),
+        moodValue: parseInt(answers[questionId] || "5"),
       });
     } else {
       submitAnswerMutation.mutate({
@@ -162,8 +162,8 @@ export default function Feedback() {
   };
 
   const getMoodEmoji = (value: number) => {
-    if (value <= 2) return <Frown className="h-8 w-8 text-destructive" />;
-    if (value === 3) return <Meh className="h-8 w-8 text-muted-foreground" />;
+    if (value <= 3) return <Frown className="h-8 w-8 text-destructive" />;
+    if (value <= 6) return <Meh className="h-8 w-8 text-muted-foreground" />;
     return <Smile className="h-8 w-8 text-primary" />;
   };
 
@@ -243,18 +243,18 @@ export default function Feedback() {
                   {question.type === "mood" && (
                     <div className="space-y-4">
                       <div className="flex justify-center">
-                        {getMoodEmoji(parseInt(answers[question.id] || "3"))}
+                        {getMoodEmoji(parseInt(answers[question.id] || "5"))}
                       </div>
                       <Slider
                         min={1}
-                        max={5}
+                        max={10}
                         step={1}
-                        value={[parseInt(answers[question.id] || "3")]}
+                        value={[parseInt(answers[question.id] || "5")]}
                         onValueChange={(value) => setAnswers({ ...answers, [question.id]: value[0].toString() })}
                       />
                       <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>Sehr schlecht</span>
-                        <span>Sehr gut</span>
+                        <span>Ganz schlecht</span>
+                        <span>Fantastisch</span>
                       </div>
                     </div>
                   )}
@@ -283,14 +283,14 @@ export default function Feedback() {
               </div>
               <Slider
                 min={1}
-                max={5}
+                max={10}
                 step={1}
                 value={moodValue}
                 onValueChange={setMoodValue}
               />
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Sehr schlecht</span>
-                <span>Sehr gut</span>
+                <span>Ganz schlecht</span>
+                <span>Fantastisch</span>
               </div>
               <Button 
                 onClick={() => submitMoodMutation.mutate(moodValue[0])}
@@ -312,7 +312,7 @@ export default function Feedback() {
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
-                    <YAxis domain={[1, 5]} />
+                    <YAxis domain={[1, 10]} />
                     <Tooltip />
                     <Line 
                       type="monotone" 
@@ -350,8 +350,8 @@ export default function Feedback() {
                 <CardContent>
                   {answer.feedback_questions?.type === "mood" ? (
                     <div className="flex items-center gap-2">
-                      {getMoodEmoji(answer.mood_value || 3)}
-                      <span className="font-medium">Stimmung: {answer.mood_value}/5</span>
+                      {getMoodEmoji(answer.mood_value || 5)}
+                      <span className="font-medium">Stimmung: {answer.mood_value}/10</span>
                     </div>
                   ) : (
                     <p className="text-sm">{answer.answer_text}</p>

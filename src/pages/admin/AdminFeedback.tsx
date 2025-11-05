@@ -207,7 +207,7 @@ export default function AdminFeedback() {
     durchschnitt: values.reduce((a: number, b: number) => a + b, 0) / values.length,
   })).reverse().slice(0, 14);
 
-  const lowMoodUsers = moodData?.filter(entry => entry.mood_value <= 2)
+  const lowMoodUsers = moodData?.filter(entry => entry.mood_value <= 4)
     .reduce((acc: any, entry) => {
       const userId = entry.user_id;
       if (!acc[userId]) acc[userId] = { count: 0, user: entry.profiles };
@@ -260,7 +260,7 @@ export default function AdminFeedback() {
                   <SelectContent>
                     <SelectItem value="text">Freitext</SelectItem>
                     <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
-                    <SelectItem value="mood">Stimmung (1-5)</SelectItem>
+                    <SelectItem value="mood">Stimmung (1-10)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -410,7 +410,7 @@ export default function AdminFeedback() {
                       <TableCell>{(a.profiles as any)?.full_name || (a.profiles as any)?.email}</TableCell>
                       <TableCell>{(a.feedback_questions as any)?.question_text}</TableCell>
                       <TableCell>
-                        {a.mood_value ? `Mood: ${a.mood_value}/5` : a.answer_text}
+                        {a.mood_value ? `Mood: ${a.mood_value}/10` : a.answer_text}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -428,7 +428,7 @@ export default function AdminFeedback() {
                 <CardDescription>Über alle Teilnehmenden</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold">{avgMood?.toFixed(1) || 0}/5</div>
+                <div className="text-4xl font-bold">{avgMood?.toFixed(1) || 0}/10</div>
               </CardContent>
             </Card>
 
@@ -465,7 +465,7 @@ export default function AdminFeedback() {
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
-                  <YAxis domain={[1, 5]} />
+                  <YAxis domain={[1, 10]} />
                   <Tooltip />
                   <Line 
                     type="monotone" 
