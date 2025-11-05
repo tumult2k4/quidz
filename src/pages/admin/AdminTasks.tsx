@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Users, Trash2, X, Upload, Link as LinkIcon, Image as ImageIcon, File } from "lucide-react";
+import { Plus, Users, Trash2, X, Upload, Link as LinkIcon, Image as ImageIcon, File, Edit } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -54,6 +54,7 @@ const AdminTasks = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [linkInput, setLinkInput] = useState("");
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -182,7 +183,28 @@ const AdminTasks = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    if (formData.assign_to_all) {
+    if (editingTask) {
+      // Update existing task
+      const { error } = await supabase
+        .from("tasks")
+        .update({
+          title: formData.title,
+          description: formData.description || null,
+          due_date: formData.due_date || null,
+          priority: formData.priority,
+          category: formData.category || null,
+          links: formData.links,
+          image_url: formData.image_url || null,
+          file_url: formData.file_url || null,
+        })
+        .eq("id", editingTask.id);
+
+      if (error) {
+        toast.error("Fehler beim Aktualisieren der Aufgabe");
+        return;
+      }
+      toast.success("Aufgabe erfolgreich aktualisiert");
+    } else if (formData.assign_to_all) {
       // Bulk insert for all users
       const tasksToInsert = users.map(u => ({
         title: formData.title,
@@ -229,6 +251,7 @@ const AdminTasks = () => {
     }
 
     setIsDialogOpen(false);
+    setEditingTask(null);
     setFormData({
       title: "",
       description: "",
@@ -255,6 +278,23 @@ const AdminTasks = () => {
     fetchData();
   };
 
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setFormData({
+      title: task.title,
+      description: task.description || "",
+      due_date: task.due_date || "",
+      priority: task.priority,
+      category: task.category || "",
+      assigned_to: task.assigned_to || "",
+      assign_to_all: task.assign_to_all,
+      links: task.links || [],
+      image_url: task.image_url || "",
+      file_url: task.file_url || "",
+    });
+    setIsDialogOpen(true);
+  };
+
   if (loading) return <div className="p-8">Lädt...</div>;
 
   return (
@@ -264,7 +304,25 @@ const AdminTasks = () => {
           <h1 className="text-3xl font-bold">Aufgabenverwaltung</h1>
           <p className="text-muted-foreground">Erstellen und verwalten Sie Aufgaben</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setEditingTask(null);
+            setFormData({
+              title: "",
+              description: "",
+              due_date: "",
+              priority: "medium",
+              category: "",
+              assigned_to: "",
+              assign_to_all: false,
+              links: [],
+              image_url: "",
+              file_url: "",
+            });
+            setLinkInput("");
+          }
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
@@ -273,8 +331,10 @@ const AdminTasks = () => {
           </DialogTrigger>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Neue Aufgabe erstellen</DialogTitle>
-              <DialogDescription>Erstellen Sie eine neue Aufgabe für Teilnehmende</DialogDescription>
+              <DialogTitle>{editingTask ? "Aufgabe bearbeiten" : "Neue Aufgabe erstellen"}</DialogTitle>
+              <DialogDescription>
+                {editingTask ? "Bearbeiten Sie die Aufgabe" : "Erstellen Sie eine neue Aufgabe für Teilnehmende"}
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -331,35 +391,39 @@ const AdminTasks = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="assign_to_all"
-                    checked={formData.assign_to_all}
-                    onCheckedChange={(checked) => setFormData({ ...formData, assign_to_all: checked as boolean, assigned_to: "" })}
-                  />
-                  <Label htmlFor="assign_to_all" className="cursor-pointer">
-                    An alle Teilnehmer zuweisen
-                  </Label>
-                </div>
-              </div>
+              {!editingTask && (
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="assign_to_all"
+                        checked={formData.assign_to_all}
+                        onCheckedChange={(checked) => setFormData({ ...formData, assign_to_all: checked as boolean, assigned_to: "" })}
+                      />
+                      <Label htmlFor="assign_to_all" className="cursor-pointer">
+                        An alle Teilnehmer zuweisen
+                      </Label>
+                    </div>
+                  </div>
 
-              {!formData.assign_to_all && (
-                <div className="space-y-2">
-                  <Label htmlFor="assigned_to">Zugewiesen an</Label>
-                  <Select value={formData.assigned_to} onValueChange={(value) => setFormData({ ...formData, assigned_to: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Wählen Sie einen User" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.full_name || user.email}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  {!formData.assign_to_all && (
+                    <div className="space-y-2">
+                      <Label htmlFor="assigned_to">Zugewiesen an</Label>
+                      <Select value={formData.assigned_to} onValueChange={(value) => setFormData({ ...formData, assigned_to: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Wählen Sie einen User" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {users.map((user) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              {user.full_name || user.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="space-y-2">
@@ -441,7 +505,9 @@ const AdminTasks = () => {
               </div>
 
               <div className="flex gap-2">
-                <Button type="submit" className="flex-1" disabled={uploading}>Aufgabe erstellen</Button>
+                <Button type="submit" className="flex-1" disabled={uploading}>
+                  {editingTask ? "Änderungen speichern" : "Aufgabe erstellen"}
+                </Button>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Abbrechen
                 </Button>
@@ -512,9 +578,14 @@ const AdminTasks = () => {
                       )}
                     </div>
                   </div>
-                  <Button variant="destructive" size="sm" onClick={() => deleteTask(task.id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleEditTask(task)}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => deleteTask(task.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
             </Card>

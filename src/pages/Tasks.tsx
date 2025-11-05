@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Circle, Clock, Calendar, TrendingUp, Link as LinkIcon, Image as ImageIcon, File } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Task {
   id: string;
@@ -22,6 +23,8 @@ interface Task {
 const Tasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -122,12 +125,20 @@ const Tasks = () => {
           </Card>
         ) : (
           tasks.map((task) => (
-            <Card key={task.id} className="shadow-card hover:shadow-glow transition-all">
+            <Card 
+              key={task.id} 
+              className="shadow-card hover:shadow-glow transition-all cursor-pointer"
+              onClick={() => {
+                setSelectedTask(task);
+                setIsDialogOpen(true);
+              }}
+            >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3 flex-1">
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         const nextStatus =
                           task.status === "open" ? "in_progress" :
                           task.status === "in_progress" ? "completed" : "open";
@@ -140,30 +151,7 @@ const Tasks = () => {
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg mb-2">{task.title}</h3>
                         {task.description && (
-                          <p className="text-muted-foreground mb-3">{task.description}</p>
-                        )}
-                        
-                        {task.image_url && (
-                          <div className="mb-3">
-                            <img src={task.image_url} alt={task.title} className="w-full max-w-md h-auto rounded border" />
-                          </div>
-                        )}
-                        
-                        {task.links && task.links.length > 0 && (
-                          <div className="mb-3 space-y-1">
-                            {task.links.map((link, idx) => (
-                              <a
-                                key={idx}
-                                href={link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-sm text-primary hover:underline"
-                              >
-                                <LinkIcon className="w-3 h-3" />
-                                {link}
-                              </a>
-                            ))}
-                          </div>
+                          <p className="text-muted-foreground mb-3 line-clamp-2">{task.description}</p>
                         )}
                         
                         <div className="flex flex-wrap gap-2 mb-2">
@@ -192,18 +180,13 @@ const Tasks = () => {
                               Datei
                             </Badge>
                           )}
+                          {task.links && task.links.length > 0 && (
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <LinkIcon className="w-3 h-3" />
+                              {task.links.length} Link{task.links.length > 1 ? 's' : ''}
+                            </Badge>
+                          )}
                         </div>
-                        
-                        {task.file_url && (
-                          <a
-                            href={task.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-primary hover:underline inline-block"
-                          >
-                            Anhang öffnen
-                          </a>
-                        )}
                       </div>
                   </div>
                 </div>
@@ -212,6 +195,112 @@ const Tasks = () => {
           ))
         )}
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">{selectedTask?.title}</DialogTitle>
+          </DialogHeader>
+          {selectedTask && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant={getPriorityColor(selectedTask.priority)}>
+                  {selectedTask.priority === "high" ? "Hoch" :
+                   selectedTask.priority === "medium" ? "Mittel" : "Niedrig"}
+                </Badge>
+                {selectedTask.category && (
+                  <Badge variant="outline">{selectedTask.category}</Badge>
+                )}
+                {selectedTask.due_date && (
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {new Date(selectedTask.due_date).toLocaleDateString("de-CH")}
+                  </Badge>
+                )}
+                <Badge variant={
+                  selectedTask.status === "completed" ? "default" : 
+                  selectedTask.status === "in_progress" ? "secondary" : "outline"
+                }>
+                  {selectedTask.status === "completed" ? "Erledigt" :
+                   selectedTask.status === "in_progress" ? "In Arbeit" : "Offen"}
+                </Badge>
+              </div>
+
+              {selectedTask.description && (
+                <div>
+                  <h4 className="font-semibold mb-2">Beschreibung</h4>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{selectedTask.description}</p>
+                </div>
+              )}
+
+              {selectedTask.image_url && (
+                <div>
+                  <h4 className="font-semibold mb-2">Bild</h4>
+                  <img 
+                    src={selectedTask.image_url} 
+                    alt={selectedTask.title} 
+                    className="w-full max-w-2xl h-auto rounded border"
+                  />
+                </div>
+              )}
+
+              {selectedTask.links && selectedTask.links.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-2">Links</h4>
+                  <div className="space-y-2">
+                    {selectedTask.links.map((link, idx) => (
+                      <a
+                        key={idx}
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-primary hover:underline p-2 border rounded"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <LinkIcon className="w-4 h-4" />
+                        {link}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedTask.file_url && (
+                <div>
+                  <h4 className="font-semibold mb-2">Dateianhang</h4>
+                  <a
+                    href={selectedTask.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-primary hover:underline p-3 border rounded"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <File className="w-5 h-5" />
+                    Datei öffnen
+                  </a>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-4">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const nextStatus =
+                      selectedTask.status === "open" ? "in_progress" :
+                      selectedTask.status === "in_progress" ? "completed" : "open";
+                    updateTaskStatus(selectedTask.id, nextStatus);
+                    setIsDialogOpen(false);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                >
+                  {getStatusIcon(selectedTask.status)}
+                  Status ändern
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

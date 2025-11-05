@@ -26,10 +26,19 @@ interface Event {
   color: string;
 }
 
+interface Task {
+  id: string;
+  title: string;
+  due_date: string | null;
+  status: string;
+  priority: string;
+}
+
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [events, setEvents] = useState<Event[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -46,6 +55,7 @@ export default function Calendar() {
   useEffect(() => {
     checkAuth();
     fetchEvents();
+    fetchTasks();
   }, []);
 
   const checkAuth = async () => {
@@ -69,6 +79,23 @@ export default function Calendar() {
       });
     } else {
       setEvents(data || []);
+    }
+  };
+
+  const fetchTasks = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("assigned_to", user.id)
+      .order("due_date", { ascending: true });
+
+    if (error) {
+      console.error("Tasks error:", error);
+    } else {
+      setTasks(data || []);
     }
   };
 
@@ -181,6 +208,14 @@ export default function Calendar() {
     });
   };
 
+  const getTasksForDay = (day: Date) => {
+    return tasks.filter(task => {
+      if (!task.due_date) return false;
+      const taskDate = parseISO(task.due_date);
+      return isSameDay(taskDate, day);
+    });
+  };
+
   const renderMonthView = () => {
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
@@ -197,6 +232,7 @@ export default function Calendar() {
         ))}
         {days.map(day => {
           const dayEvents = getEventsForDay(day);
+          const dayTasks = getTasksForDay(day);
           return (
             <Card
               key={day.toString()}
@@ -212,6 +248,15 @@ export default function Calendar() {
                     onClick={() => handleEditEvent(event)}
                   >
                     {event.title}
+                  </div>
+                ))}
+                {dayTasks.map(task => (
+                  <div
+                    key={task.id}
+                    className="text-xs p-1 rounded bg-orange-100 dark:bg-orange-900/30 border-l-3 border-orange-500"
+                    title={`Aufgabe: ${task.title} (${task.status})`}
+                  >
+                    📋 {task.title}
                   </div>
                 ))}
               </div>
@@ -231,6 +276,7 @@ export default function Calendar() {
       <div className="grid grid-cols-7 gap-2">
         {days.map(day => {
           const dayEvents = getEventsForDay(day);
+          const dayTasks = getTasksForDay(day);
           return (
             <Card key={day.toString()} className="min-h-96 p-2">
               <div className="text-sm font-semibold mb-2">
@@ -250,6 +296,17 @@ export default function Calendar() {
                     </div>
                   </div>
                 ))}
+                {dayTasks.map(task => (
+                  <div
+                    key={task.id}
+                    className="text-xs p-2 rounded bg-orange-100 dark:bg-orange-900/30 border-l-3 border-orange-500"
+                  >
+                    <div className="font-medium">📋 {task.title}</div>
+                    <div className="text-muted-foreground text-[10px]">
+                      {task.status === "completed" ? "Erledigt" : task.status === "in_progress" ? "In Arbeit" : "Offen"}
+                    </div>
+                  </div>
+                ))}
               </div>
             </Card>
           );
@@ -260,6 +317,7 @@ export default function Calendar() {
 
   const renderDayView = () => {
     const dayEvents = getEventsForDay(currentDate);
+    const dayTasks = getTasksForDay(currentDate);
 
     return (
       <Card className="p-4">
@@ -267,29 +325,43 @@ export default function Calendar() {
           {format(currentDate, "EEEE, d. MMMM yyyy", { locale: de })}
         </h3>
         <div className="space-y-2">
-          {dayEvents.length === 0 ? (
-            <p className="text-muted-foreground">Keine Events für diesen Tag</p>
+          {dayEvents.length === 0 && dayTasks.length === 0 ? (
+            <p className="text-muted-foreground">Keine Events oder Aufgaben für diesen Tag</p>
           ) : (
-            dayEvents.map(event => (
-              <div
-                key={event.id}
-                className="p-4 rounded cursor-pointer hover:opacity-80"
-                style={{ backgroundColor: event.color + "40", borderLeft: `4px solid ${event.color}` }}
-                onClick={() => handleEditEvent(event)}
-              >
-                <div className="font-semibold">{event.title}</div>
-                <div className="text-sm text-muted-foreground">
-                  {event.all_day ? (
-                    "Ganztägig"
-                  ) : (
-                    `${format(parseISO(event.start_time), "HH:mm")} - ${format(parseISO(event.end_time), "HH:mm")}`
+            <>
+              {dayEvents.map(event => (
+                <div
+                  key={event.id}
+                  className="p-4 rounded cursor-pointer hover:opacity-80"
+                  style={{ backgroundColor: event.color + "40", borderLeft: `4px solid ${event.color}` }}
+                  onClick={() => handleEditEvent(event)}
+                >
+                  <div className="font-semibold">{event.title}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {event.all_day ? (
+                      "Ganztägig"
+                    ) : (
+                      `${format(parseISO(event.start_time), "HH:mm")} - ${format(parseISO(event.end_time), "HH:mm")}`
+                    )}
+                  </div>
+                  {event.description && (
+                    <div className="text-sm mt-2">{event.description}</div>
                   )}
                 </div>
-                {event.description && (
-                  <div className="text-sm mt-2">{event.description}</div>
-                )}
-              </div>
-            ))
+              ))}
+              {dayTasks.map(task => (
+                <div
+                  key={task.id}
+                  className="p-4 rounded bg-orange-100 dark:bg-orange-900/30 border-l-4 border-orange-500"
+                >
+                  <div className="font-semibold">📋 {task.title}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Aufgabe - {task.status === "completed" ? "Erledigt" : task.status === "in_progress" ? "In Arbeit" : "Offen"}
+                    {task.priority && ` • Priorität: ${task.priority === "high" ? "Hoch" : task.priority === "medium" ? "Mittel" : "Niedrig"}`}
+                  </div>
+                </div>
+              ))}
+            </>
           )}
         </div>
       </Card>
