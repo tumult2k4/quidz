@@ -149,11 +149,13 @@ export default function Feedback() {
 
   const handleSubmitAnswer = (questionId: string, type: string) => {
     if (type === "mood") {
+      const moodValue = answers[questionId] ? parseInt(answers[questionId]) : 5;
       submitAnswerMutation.mutate({
         questionId,
-        moodValue: parseInt(answers[questionId] || "5"),
+        moodValue,
       });
     } else {
+      if (!answers[questionId]) return;
       submitAnswerMutation.mutate({
         questionId,
         answerText: answers[questionId],
@@ -249,7 +251,8 @@ export default function Feedback() {
                         min={1}
                         max={10}
                         step={1}
-                        value={[parseInt(answers[question.id] || "5")]}
+                        defaultValue={[5]}
+                        value={answers[question.id] ? [parseInt(answers[question.id])] : undefined}
                         onValueChange={(value) => setAnswers({ ...answers, [question.id]: value[0].toString() })}
                       />
                       <div className="flex justify-between text-sm text-muted-foreground">
