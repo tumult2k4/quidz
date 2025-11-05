@@ -154,6 +154,101 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback_answers: {
+        Row: {
+          answer_text: string | null
+          created_at: string
+          id: string
+          mood_value: number | null
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          answer_text?: string | null
+          created_at?: string
+          id?: string
+          mood_value?: number | null
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          answer_text?: string | null
+          created_at?: string
+          id?: string
+          mood_value?: number | null
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback_questions: {
+        Row: {
+          active_from: string
+          active_until: string | null
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean | null
+          options: Json | null
+          question_text: string
+          target_user: string | null
+          type: string
+        }
+        Insert: {
+          active_from?: string
+          active_until?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean | null
+          options?: Json | null
+          question_text: string
+          target_user?: string | null
+          type: string
+        }
+        Update: {
+          active_from?: string
+          active_until?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean | null
+          options?: Json | null
+          question_text?: string
+          target_user?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      mood_entries: {
+        Row: {
+          created_at: string
+          id: string
+          mood_value: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mood_value: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mood_value?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -22,6 +22,8 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminTools from "./pages/admin/AdminTools";
 import Tools from "./pages/Tools";
 import Calendar from "./pages/Calendar";
+import Feedback from "./pages/Feedback";
+import AdminFeedback from "./pages/admin/AdminFeedback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,8 +52,10 @@ const App = () => (
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/tools" element={<AdminTools />} />
+            <Route path="/admin/feedback" element={<AdminFeedback />} />
             <Route path="/tools" element={<Tools />} />
             <Route path="/calendar" element={<Calendar />} />
+            <Route path="/feedback" element={<Feedback />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
