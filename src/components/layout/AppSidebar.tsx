@@ -14,6 +14,7 @@ import {
   Wrench,
   CalendarDays,
   MessagesSquare,
+  Bot,
 } from "lucide-react";
 import logo from "@/assets/logoquidz.png";
 import {
@@ -48,6 +49,7 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
     { title: "Werkzeuge", url: "/tools", icon: Wrench },
     { title: "Kalender", url: "/calendar", icon: CalendarDays },
     { title: "Feedback", url: "/feedback", icon: MessagesSquare },
+    { title: "KI Assistent", url: "/ai-assistant", icon: Bot },
     { title: "Portfolio", url: "/portfolio", icon: Sparkles },
     { title: "Meine Projekte", url: "/my-projects", icon: FolderKanban },
     { title: "Profil", url: "/profile", icon: User },
@@ -63,6 +65,7 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
     { title: "Werkzeuge", url: "/admin/tools", icon: Wrench },
     { title: "Kalender", url: "/calendar", icon: CalendarDays },
     { title: "Feedback", url: "/admin/feedback", icon: MessagesSquare },
+    { title: "KI Assistent", url: "/admin/ai", icon: Bot },
     { title: "Portfolio", url: "/portfolio", icon: Sparkles },
     { title: "Meine Projekte", url: "/my-projects", icon: FolderKanban },
     { title: "Einstellungen", url: "/admin/settings", icon: Settings },

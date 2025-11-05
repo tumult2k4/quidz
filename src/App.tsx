@@ -24,6 +24,8 @@ import Tools from "./pages/Tools";
 import Calendar from "./pages/Calendar";
 import Feedback from "./pages/Feedback";
 import AdminFeedback from "./pages/admin/AdminFeedback";
+import AdminAI from "./pages/admin/AdminAI";
+import AIAssistant from "./pages/AIAssistant";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +58,8 @@ const App = () => (
             <Route path="/tools" element={<Tools />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/feedback" element={<Feedback />} />
+            <Route path="/ai-assistant" element={<AIAssistant />} />
+            <Route path="/admin/ai" element={<AdminAI />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
