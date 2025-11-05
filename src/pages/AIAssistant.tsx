@@ -4,9 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, Send, Bot, User as UserIcon } from "lucide-react";
+import { Loader2, Send, Bot, User as UserIcon, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Message {
   id: string;
@@ -133,6 +144,32 @@ const AIAssistant = () => {
       .slice(0, 2);
   };
 
+  const clearChatHistory = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('ai_chat_messages')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setMessages([]);
+      toast({
+        title: "Erfolg",
+        description: "Chat-Verlauf wurde gelöscht.",
+      });
+    } catch (error: any) {
+      console.error('Error clearing chat:', error);
+      toast({
+        title: "Fehler",
+        description: "Der Chat-Verlauf konnte nicht gelöscht werden.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
       <div className="mb-4">
@@ -142,14 +179,40 @@ const AIAssistant = () => {
 
       <Card className="flex-1 flex flex-col shadow-card">
         <CardHeader className="border-b">
-          <CardTitle className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Bot className="w-5 h-5 text-primary" />
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Bot className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <div>{botName}</div>
+                <div className="text-sm font-normal text-muted-foreground">Immer für dich da</div>
+              </div>
             </div>
-            <div>
-              <div>{botName}</div>
-              <div className="text-sm font-normal text-muted-foreground">Immer für dich da</div>
-            </div>
+            {messages.length > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Verlauf löschen
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Chat-Verlauf löschen?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Diese Aktion kann nicht rückgängig gemacht werden. Der gesamte Chat-Verlauf wird dauerhaft gelöscht.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogAction onClick={clearChatHistory}>
+                      Löschen
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </CardTitle>
         </CardHeader>
 
