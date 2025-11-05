@@ -31,6 +31,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Download, Users, TrendingUp, AlertTriangle } from "lucide-react";
+import UserMoodChart from "@/components/admin/UserMoodChart";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Switch } from "@/components/ui/switch";
@@ -107,8 +108,7 @@ export default function AdminFeedback() {
           *,
           profiles:user_id (full_name, email)
         `)
-        .order("created_at", { ascending: false })
-        .limit(100);
+        .order("created_at", { ascending: false });
       
       if (error) throw error;
       return data;
@@ -455,10 +455,14 @@ export default function AdminFeedback() {
             )}
           </div>
 
+          {users && moodData && (
+            <UserMoodChart moodData={moodData} users={users} />
+          )}
+
           <Card>
             <CardHeader>
-              <CardTitle>Stimmungsverlauf (14 Tage)</CardTitle>
-              <CardDescription>Durchschnittliche Stimmung pro Tag</CardDescription>
+              <CardTitle>Stimmungsverlauf Übersicht (14 Tage)</CardTitle>
+              <CardDescription>Durchschnittliche Stimmung aller Teilnehmer pro Tag</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>

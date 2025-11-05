@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import MoodTracker from "@/components/dashboard/MoodTracker";
 
 interface UserDashboardProps {
   user: User;
@@ -172,27 +174,33 @@ const UserDashboard = ({ user }: UserDashboardProps) => {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-6">
-        {/* Progress Card */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  Dein Fortschritt
-                </CardTitle>
-                <CardDescription>Diese Woche</CardDescription>
+        {/* Progress and Mood Grid */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Progress Card */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    Dein Fortschritt
+                  </CardTitle>
+                  <CardDescription>Diese Woche</CardDescription>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-primary">{completedTasks}</p>
+                  <p className="text-sm text-muted-foreground">von {totalTasks} Aufgaben</p>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-3xl font-bold text-primary">{completedTasks}</p>
-                <p className="text-sm text-muted-foreground">von {totalTasks} Aufgaben</p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Progress value={progress} className="h-3" />
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <Progress value={progress} className="h-3" />
+            </CardContent>
+          </Card>
+
+          {/* Mood Tracker */}
+          <MoodTracker userId={user.id} />
+        </div>
 
         {/* Tasks */}
         <Card className="shadow-card">

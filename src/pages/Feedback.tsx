@@ -113,30 +113,13 @@ export default function Feedback() {
 
   const submitMoodMutation = useMutation({
     mutationFn: async (mood: number) => {
-      const today = new Date().toISOString().split('T')[0];
-      
-      const { data: existing } = await supabase
+      const { error } = await supabase
         .from("mood_entries")
-        .select("*")
-        .eq("user_id", user?.id)
-        .gte("created_at", today)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase
-          .from("mood_entries")
-          .update({ mood_value: mood })
-          .eq("id", existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("mood_entries")
-          .insert({
-            user_id: user?.id,
-            mood_value: mood,
-          });
-        if (error) throw error;
-      }
+        .insert({
+          user_id: user?.id,
+          mood_value: mood,
+        });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["moodEntries"] });
