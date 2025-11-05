@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Wrench } from "lucide-react";
+import { Plus, Trash2, Wrench, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -30,6 +30,7 @@ const AdminTools = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [editingTool, setEditingTool] = useState<Tool | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -100,23 +101,52 @@ const AdminTools = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase.from("tools").insert({
-      title: formData.title,
-      description: formData.description || null,
-      web_link: formData.web_link,
-      image_url: formData.image_url || null,
-      created_by: user.id,
-    });
+    if (editingTool) {
+      const { error } = await supabase.from("tools").update({
+        title: formData.title,
+        description: formData.description || null,
+        web_link: formData.web_link,
+        image_url: formData.image_url || null,
+      }).eq("id", editingTool.id);
 
-    if (error) {
-      toast.error("Fehler beim Erstellen des Werkzeugs");
-      return;
+      if (error) {
+        toast.error("Fehler beim Aktualisieren des Werkzeugs");
+        return;
+      }
+
+      toast.success("Werkzeug erfolgreich aktualisiert");
+    } else {
+      const { error } = await supabase.from("tools").insert({
+        title: formData.title,
+        description: formData.description || null,
+        web_link: formData.web_link,
+        image_url: formData.image_url || null,
+        created_by: user.id,
+      });
+
+      if (error) {
+        toast.error("Fehler beim Erstellen des Werkzeugs");
+        return;
+      }
+
+      toast.success("Werkzeug erfolgreich erstellt");
     }
 
-    toast.success("Werkzeug erfolgreich erstellt");
     setIsDialogOpen(false);
+    setEditingTool(null);
     setFormData({ title: "", description: "", web_link: "", image_url: "" });
     fetchTools();
+  };
+
+  const openEditDialog = (tool: Tool) => {
+    setEditingTool(tool);
+    setFormData({
+      title: tool.title,
+      description: tool.description || "",
+      web_link: tool.web_link,
+      image_url: tool.image_url || "",
+    });
+    setIsDialogOpen(true);
   };
 
   const deleteTool = async (id: string) => {
@@ -138,7 +168,13 @@ const AdminTools = () => {
           <h1 className="text-3xl font-bold">Werkzeuge verwalten</h1>
           <p className="text-muted-foreground">Erstellen und verwalten Sie Werkzeuge</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setEditingTool(null);
+            setFormData({ title: "", description: "", web_link: "", image_url: "" });
+          }
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
@@ -147,8 +183,10 @@ const AdminTools = () => {
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Neues Werkzeug erstellen</DialogTitle>
-              <DialogDescription>Erstellen Sie ein neues Werkzeug für Teilnehmende</DialogDescription>
+              <DialogTitle>{editingTool ? "Werkzeug bearbeiten" : "Neues Werkzeug erstellen"}</DialogTitle>
+              <DialogDescription>
+                {editingTool ? "Bearbeiten Sie das Werkzeug" : "Erstellen Sie ein neues Werkzeug für Teilnehmende"}
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -197,7 +235,7 @@ const AdminTools = () => {
               </div>
               <div className="flex gap-2">
                 <Button type="submit" className="flex-1" disabled={uploading}>
-                  Werkzeug erstellen
+                  {editingTool ? "Werkzeug aktualisieren" : "Werkzeug erstellen"}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Abbrechen
@@ -227,9 +265,14 @@ const AdminTools = () => {
                     <Wrench className="w-4 h-4 text-primary" />
                     {tool.title}
                   </span>
-                  <Button variant="destructive" size="sm" onClick={() => deleteTool(tool.id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => openEditDialog(tool)}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => deleteTool(tool.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </CardTitle>
                 {tool.description && (
                   <CardDescription>{tool.description}</CardDescription>
