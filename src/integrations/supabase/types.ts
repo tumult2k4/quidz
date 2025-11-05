@@ -187,6 +187,13 @@ export type Database = {
             referencedRelation: "feedback_questions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "feedback_answers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       feedback_questions: {
@@ -247,7 +254,15 @@ export type Database = {
           mood_value?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "mood_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
