@@ -54,7 +54,7 @@ export default function AdminFeedback() {
     question_text: "",
     type: "text",
     options: "",
-    target_user: "",
+    target_user: "all",
     active_from: new Date().toISOString().slice(0, 16),
     active_until: "",
     is_active: true,
@@ -142,7 +142,7 @@ export default function AdminFeedback() {
         questionData.options = newQuestion.options.split("\n").filter(o => o.trim());
       }
 
-      if (newQuestion.target_user) {
+      if (newQuestion.target_user && newQuestion.target_user !== "all") {
         questionData.target_user = newQuestion.target_user;
       }
 
@@ -159,7 +159,7 @@ export default function AdminFeedback() {
         question_text: "",
         type: "text",
         options: "",
-        target_user: "",
+        target_user: "all",
         active_from: new Date().toISOString().slice(0, 16),
         active_until: "",
         is_active: true,
@@ -287,7 +287,7 @@ export default function AdminFeedback() {
                     <SelectValue placeholder="Alle Benutzer" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle Benutzer</SelectItem>
+                    <SelectItem value="all">Alle Benutzer</SelectItem>
                     {users?.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.full_name || u.email}
