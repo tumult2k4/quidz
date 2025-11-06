@@ -185,12 +185,11 @@ export function FlashcardEditor({
 
           <div className="space-y-2">
             <Label htmlFor="category">Kategorie (optional)</Label>
-            <Select value={categoryId} onValueChange={setCategoryId}>
+            <Select value={categoryId || undefined} onValueChange={setCategoryId}>
               <SelectTrigger>
-                <SelectValue placeholder="Kategorie wählen..." />
+                <SelectValue placeholder="Keine Kategorie" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Keine Kategorie</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     {cat.name}
