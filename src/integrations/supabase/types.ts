@@ -92,6 +92,54 @@ export type Database = {
         }
         Relationships: []
       }
+      badges: {
+        Row: {
+          badge_type: string
+          earned_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_type: string
+          earned_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_type?: string
+          earned_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          featured: boolean | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          featured?: boolean | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          featured?: boolean | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string
@@ -283,6 +331,144 @@ export type Database = {
         }
         Relationships: []
       }
+      flashcard_feedbacks: {
+        Row: {
+          created_at: string | null
+          flashcard_id: string
+          id: string
+          is_helpful: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          flashcard_id: string
+          id?: string
+          is_helpful: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          flashcard_id?: string
+          id?: string
+          is_helpful?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_feedbacks_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcard_tags: {
+        Row: {
+          flashcard_id: string
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          flashcard_id: string
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          flashcard_id?: string
+          id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_tags_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcards: {
+        Row: {
+          back_text: string
+          category_id: string | null
+          created_at: string | null
+          created_by: string
+          front_text: string
+          id: string
+          is_public: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          back_text: string
+          category_id?: string | null
+          created_at?: string | null
+          created_by: string
+          front_text: string
+          id?: string
+          is_public?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          back_text?: string
+          category_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          front_text?: string
+          id?: string
+          is_public?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcards_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_progress: {
+        Row: {
+          created_at: string | null
+          flashcard_id: string
+          id: string
+          knew_answer: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          flashcard_id: string
+          id?: string
+          knew_answer: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          flashcard_id?: string
+          id?: string
+          knew_answer?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_progress_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mood_entries: {
         Row: {
           created_at: string
@@ -462,6 +648,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tags: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       tasks: {
         Row: {
