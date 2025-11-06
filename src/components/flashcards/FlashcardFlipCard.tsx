@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
@@ -18,6 +18,11 @@ export function FlashcardFlipCard({
   showFeedback = true 
 }: FlashcardFlipCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
+
+  // Reset flip state when card content changes
+  useEffect(() => {
+    setIsFlipped(false);
+  }, [frontText, backText]);
 
   return (
     <div className="perspective-1000 w-full max-w-2xl mx-auto">
