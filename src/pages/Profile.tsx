@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { BadgeDisplay } from "@/components/badges/BadgeDisplay";
 import { User, Mail, Save, LogOut, Lock, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
@@ -31,6 +32,7 @@ const Profile = () => {
     newPassword: "",
     confirmPassword: "",
   });
+  const [badges, setBadges] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -53,6 +55,18 @@ const Profile = () => {
         full_name: data.full_name || "",
         email: data.email || "",
       });
+      
+      // Fetch badges
+      const { data: badgesData } = await supabase
+        .from("badges")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("earned_at", { ascending: false });
+      
+      if (badgesData) {
+        setBadges(badgesData);
+      }
+      
       setLoading(false);
     };
 
@@ -309,6 +323,9 @@ const Profile = () => {
           </form>
         </CardContent>
       </Card>
+
+      {/* Badges Section */}
+      <BadgeDisplay badges={badges} showTitle={true} />
 
       <Card className="shadow-card border-destructive/50">
         <CardHeader>

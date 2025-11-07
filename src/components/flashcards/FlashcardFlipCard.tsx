@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
+import { ThumbsUp, ThumbsDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FlashcardFlipCardProps {
@@ -9,13 +9,25 @@ interface FlashcardFlipCardProps {
   backText: string;
   onFeedback?: (isHelpful: boolean) => void;
   showFeedback?: boolean;
+  onNext?: () => void;
+  onPrevious?: () => void;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
+  currentIndex?: number;
+  totalCards?: number;
 }
 
 export function FlashcardFlipCard({ 
   frontText, 
   backText, 
   onFeedback,
-  showFeedback = true 
+  showFeedback = true,
+  onNext,
+  onPrevious,
+  hasNext = false,
+  hasPrevious = false,
+  currentIndex,
+  totalCards
 }: FlashcardFlipCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -25,7 +37,46 @@ export function FlashcardFlipCard({
   }, [frontText, backText]);
 
   return (
-    <div className="perspective-1000 w-full max-w-2xl mx-auto">
+    <div className="perspective-1000 w-full max-w-2xl mx-auto relative">
+      {/* Navigation Buttons */}
+      {(hasPrevious || hasNext) && (
+        <>
+          {hasPrevious && onPrevious && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-16 z-10"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPrevious();
+              }}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          )}
+          {hasNext && onNext && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-16 z-10"
+              onClick={(e) => {
+                e.stopPropagation();
+                onNext();
+              }}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+        </>
+      )}
+
+      {/* Card Counter */}
+      {currentIndex !== undefined && totalCards !== undefined && (
+        <div className="text-center mb-4 text-sm text-muted-foreground">
+          Karte {currentIndex + 1} von {totalCards}
+        </div>
+      )}
+
       <div
         className={cn(
           "relative w-full h-96 transition-transform duration-500 transform-style-3d cursor-pointer",

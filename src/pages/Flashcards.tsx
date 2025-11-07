@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FlashcardEditor } from "@/components/flashcards/FlashcardEditor";
 import { FlashcardFlipCard } from "@/components/flashcards/FlashcardFlipCard";
+import { BadgeDisplay } from "@/components/badges/BadgeDisplay";
+import { ExportPanel } from "@/components/flashcards/ExportPanel";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, 
@@ -13,7 +15,9 @@ import {
   Filter,
   Edit,
   Trash2,
-  Award
+  Award,
+  CheckCircle2,
+  Circle
 } from "lucide-react";
 import {
   Select,
@@ -40,6 +44,7 @@ interface Flashcard {
   category_id: string | null;
   is_public: boolean;
   created_by: string;
+  created_at: string;
   categories?: { name: string } | null;
 }
 
@@ -48,12 +53,20 @@ interface Category {
   name: string;
 }
 
+interface Tag {
+  id: string;
+  name: string;
+}
+
 export default function Flashcards() {
   const { toast } = useToast();
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedTag, setSelectedTag] = useState<string>("all");
   const [showOnlyOwn, setShowOnlyOwn] = useState(false);
+  const [showOnlyPublic, setShowOnlyPublic] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<Flashcard | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -61,12 +74,25 @@ export default function Flashcards() {
   const [user, setUser] = useState<any>(null);
   const [learningMode, setLearningMode] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [learnedCards, setLearnedCards] = useState<Set<string>>(new Set());
+  const [badges, setBadges] = useState<any[]>([]);
 
   useEffect(() => {
     fetchUser();
     fetchCategories();
+    fetchTags();
+  }, []);
+
+  useEffect(() => {
     fetchFlashcards();
-  }, [selectedCategory, showOnlyOwn]);
+  }, [selectedCategory, selectedTag, showOnlyOwn, showOnlyPublic, user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchBadges();
+      fetchLearnedCards();
+    }
+  }, [user]);
 
   const fetchUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -81,6 +107,17 @@ export default function Flashcards() {
     
     if (data) {
       setCategories(data);
+    }
+  };
+
+  const fetchTags = async () => {
+    const { data } = await supabase
+      .from("tags")
+      .select("id, name")
+      .order("name");
+    
+    if (data) {
+      setTags(data);
     }
   };
 
@@ -101,6 +138,10 @@ export default function Flashcards() {
       query = query.eq("created_by", user.id);
     }
 
+    if (showOnlyPublic) {
+      query = query.eq("is_public", true);
+    }
+
     const { data, error } = await query;
 
     if (error) {
@@ -110,8 +151,49 @@ export default function Flashcards() {
         description: "Lernkarten konnten nicht geladen werden.",
         variant: "destructive",
       });
-    } else {
-      setFlashcards(data || []);
+      return;
+    }
+
+    // Filter by tag if selected
+    let filtered = data || [];
+    if (selectedTag !== "all") {
+      const { data: taggedCards } = await supabase
+        .from("flashcard_tags")
+        .select("flashcard_id")
+        .eq("tag_id", selectedTag);
+      
+      const taggedCardIds = new Set(taggedCards?.map(t => t.flashcard_id) || []);
+      filtered = filtered.filter(card => taggedCardIds.has(card.id));
+    }
+
+    setFlashcards(filtered);
+  };
+
+  const fetchBadges = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("badges")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("earned_at", { ascending: false });
+
+    if (data) {
+      setBadges(data);
+    }
+  };
+
+  const fetchLearnedCards = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("learning_progress")
+      .select("flashcard_id, knew_answer")
+      .eq("user_id", user.id)
+      .eq("knew_answer", true);
+
+    if (data) {
+      setLearnedCards(new Set(data.map(p => p.flashcard_id)));
     }
   };
 
@@ -194,6 +276,13 @@ export default function Flashcards() {
         title: "Fertig!",
         description: `Du hast ${flashcards.length} Karten durchgearbeitet.`,
       });
+      checkSessionBadges();
+    }
+  };
+
+  const previousCard = () => {
+    if (currentCardIndex > 0) {
+      setCurrentCardIndex(currentCardIndex - 1);
     }
   };
 
@@ -211,10 +300,46 @@ export default function Flashcards() {
           knew_answer: knewAnswer,
         }]);
 
+      if (knewAnswer) {
+        setLearnedCards(new Set([...learnedCards, currentCard.id]));
+      }
+
       nextCard();
     } catch (error: any) {
       console.error("Error recording progress:", error);
       nextCard();
+    }
+  };
+
+  const checkSessionBadges = async () => {
+    if (!user) return;
+
+    const { count } = await supabase
+      .from("learning_progress")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id);
+
+    const badges = [];
+    if (count === 10) badges.push("cards_10");
+    if (count === 50) badges.push("cards_50");
+
+    for (const badgeType of badges) {
+      const { data: existing } = await supabase
+        .from("badges")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("badge_type", badgeType)
+        .maybeSingle();
+
+      if (!existing) {
+        await supabase
+          .from("badges")
+          .insert({ user_id: user.id, badge_type: badgeType });
+      }
+    }
+
+    if (badges.length > 0) {
+      fetchBadges();
     }
   };
 
@@ -240,6 +365,12 @@ export default function Flashcards() {
             frontText={currentCard.front_text}
             backText={currentCard.back_text}
             showFeedback={false}
+            onNext={nextCard}
+            onPrevious={previousCard}
+            hasNext={currentCardIndex < flashcards.length - 1}
+            hasPrevious={currentCardIndex > 0}
+            currentIndex={currentCardIndex}
+            totalCards={flashcards.length}
           />
 
           <div className="flex gap-4 justify-center mt-8">
@@ -289,6 +420,14 @@ export default function Flashcards() {
         </div>
       </div>
 
+      {/* Badges */}
+      {badges.length > 0 && (
+        <BadgeDisplay badges={badges} />
+      )}
+
+      {/* Export Panel */}
+      <ExportPanel flashcards={flashcards} title="Meine Lernkarten" />
+
       {/* Filters */}
       <Card>
         <CardHeader>
@@ -297,8 +436,8 @@ export default function Flashcards() {
             Filter
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-4">
-          <div className="flex-1">
+        <CardContent className="flex flex-wrap gap-4">
+          <div className="flex-1 min-w-[200px]">
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger>
                 <SelectValue placeholder="Kategorie wählen" />
@@ -313,11 +452,32 @@ export default function Flashcards() {
               </SelectContent>
             </Select>
           </div>
+          <div className="flex-1 min-w-[200px]">
+            <Select value={selectedTag} onValueChange={setSelectedTag}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tag wählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Tags</SelectItem>
+                {tags.map((tag) => (
+                  <SelectItem key={tag.id} value={tag.id}>
+                    {tag.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button
             variant={showOnlyOwn ? "default" : "outline"}
             onClick={() => setShowOnlyOwn(!showOnlyOwn)}
           >
             Nur meine Karten
+          </Button>
+          <Button
+            variant={showOnlyPublic ? "default" : "outline"}
+            onClick={() => setShowOnlyPublic(!showOnlyPublic)}
+          >
+            Nur öffentliche
           </Button>
         </CardContent>
       </Card>
@@ -327,10 +487,18 @@ export default function Flashcards() {
         {flashcards.map((card) => (
           <Card key={card.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-lg line-clamp-2">
-                  {card.front_text}
-                </CardTitle>
+              <div className="flex justify-between items-start gap-2">
+                <div className="flex-1">
+                  <CardTitle className="text-lg line-clamp-2">
+                    {card.front_text}
+                  </CardTitle>
+                  {learnedCards.has(card.id) && (
+                    <Badge variant="secondary" className="mt-2">
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      Gelernt
+                    </Badge>
+                  )}
+                </div>
                 {user?.id === card.created_by && (
                   <div className="flex gap-1">
                     <Button
