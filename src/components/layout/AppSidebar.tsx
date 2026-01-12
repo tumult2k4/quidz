@@ -33,12 +33,14 @@ import {
 
 interface AppSidebarProps {
   isAdmin: boolean;
+  isCoach?: boolean;
 }
 
-export function AppSidebar({ isAdmin }: AppSidebarProps) {
+export function AppSidebar({ isAdmin, isCoach }: AppSidebarProps) {
   const location = useLocation();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const hasAdminAccess = isAdmin || isCoach;
 
   const userItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -73,7 +75,7 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
     { title: "Einstellungen", url: "/admin/settings", icon: Settings },
   ];
 
-  const items = isAdmin ? adminItems : userItems;
+  const items = hasAdminAccess ? adminItems : userItems;
 
   return (
     <Sidebar collapsible="icon">
@@ -85,7 +87,7 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
               <div>
                 <h2 className="font-bold text-lg">QUIDZ</h2>
                 <p className="text-xs text-muted-foreground">
-                  {isAdmin ? "Admin" : "Teilnehmer"}
+                  {isAdmin ? "Admin" : isCoach ? "Coach" : "Teilnehmer"}
                 </p>
               </div>
             )}
@@ -96,7 +98,7 @@ export function AppSidebar({ isAdmin }: AppSidebarProps) {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{isAdmin ? "Verwaltung" : "Navigation"}</SidebarGroupLabel>
+          <SidebarGroupLabel>{hasAdminAccess ? "Verwaltung" : "Navigation"}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => {
