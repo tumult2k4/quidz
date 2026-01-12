@@ -4,8 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Shield, User } from "lucide-react";
+import { Users, Shield, User, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Profile {
   id: string;
@@ -52,36 +58,66 @@ const AdminUsers = () => {
     fetchUsers();
   }, []);
 
-  const toggleAdminRole = async (userId: string, isCurrentlyAdmin: boolean) => {
-    if (isCurrentlyAdmin) {
-      const { error } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", userId)
-        .eq("role", "admin");
+  const setUserRole = async (userId: string, newRole: "admin" | "coach" | "user") => {
+    // First, remove all existing roles (admin, coach) - keep 'user' as base
+    const { error: deleteError } = await supabase
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .in("role", ["admin", "coach"]);
 
-      if (error) {
-        toast.error("Fehler beim Entfernen der Admin-Rolle");
-        return;
-      }
-      toast.success("Admin-Rolle entfernt");
-    } else {
-      const { error } = await supabase
-        .from("user_roles")
-        .insert({ user_id: userId, role: "admin" });
-
-      if (error) {
-        toast.error("Fehler beim Hinzufügen der Admin-Rolle");
-        return;
-      }
-      toast.success("Admin-Rolle hinzugefügt");
+    if (deleteError) {
+      toast.error("Fehler beim Ändern der Rolle");
+      return;
     }
 
+    // If not setting to 'user', add the new role
+    if (newRole !== "user") {
+      const { error: insertError } = await supabase
+        .from("user_roles")
+        .insert({ user_id: userId, role: newRole });
+
+      if (insertError) {
+        toast.error("Fehler beim Hinzufügen der Rolle");
+        return;
+      }
+    }
+
+    const roleLabels = { admin: "Admin", coach: "Coach", user: "Teilnehmer" };
+    toast.success(`Rolle auf ${roleLabels[newRole]} geändert`);
     fetchUsers();
   };
 
-  const isAdmin = (user: Profile) => {
-    return user.user_roles?.some((r) => r.role === "admin") || false;
+  const getUserRole = (user: Profile): "admin" | "coach" | "user" => {
+    if (user.user_roles?.some((r) => r.role === "admin")) return "admin";
+    if (user.user_roles?.some((r) => r.role === "coach")) return "coach";
+    return "user";
+  };
+
+  const getRoleBadge = (role: "admin" | "coach" | "user") => {
+    switch (role) {
+      case "admin":
+        return (
+          <Badge variant="default" className="flex items-center gap-1">
+            <Shield className="w-3 h-3" />
+            Admin
+          </Badge>
+        );
+      case "coach":
+        return (
+          <Badge variant="secondary" className="flex items-center gap-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+            <GraduationCap className="w-3 h-3" />
+            Coach
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <User className="w-3 h-3" />
+            Teilnehmer
+          </Badge>
+        );
+    }
   };
 
   if (loading) return <div className="p-8">Lädt...</div>;
@@ -102,7 +138,7 @@ const AdminUsers = () => {
           </Card>
         ) : (
           users.map((user) => {
-            const userIsAdmin = isAdmin(user);
+            const userRole = getUserRole(user);
             return (
               <Card key={user.id} className="shadow-card">
                 <CardHeader>
@@ -120,30 +156,43 @@ const AdminUsers = () => {
                         </CardTitle>
                         <CardDescription className="mb-3">{user.email}</CardDescription>
                         <div className="flex items-center gap-2">
-                          {userIsAdmin ? (
-                            <Badge variant="default" className="flex items-center gap-1">
-                              <Shield className="w-3 h-3" />
-                              Admin
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              Teilnehmer
-                            </Badge>
-                          )}
+                          {getRoleBadge(userRole)}
                           <span className="text-sm text-muted-foreground">
                             Registriert: {new Date(user.created_at).toLocaleDateString("de-CH")}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <Button
-                      variant={userIsAdmin ? "outline" : "default"}
-                      size="sm"
-                      onClick={() => toggleAdminRole(user.id, userIsAdmin)}
-                    >
-                      {userIsAdmin ? "Admin entfernen" : "Zum Admin machen"}
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          Rolle ändern
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => setUserRole(user.id, "admin")}
+                          disabled={userRole === "admin"}
+                        >
+                          <Shield className="w-4 h-4 mr-2" />
+                          Admin
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setUserRole(user.id, "coach")}
+                          disabled={userRole === "coach"}
+                        >
+                          <GraduationCap className="w-4 h-4 mr-2" />
+                          Coach
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setUserRole(user.id, "user")}
+                          disabled={userRole === "user"}
+                        >
+                          <User className="w-4 h-4 mr-2" />
+                          Teilnehmer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </CardHeader>
               </Card>

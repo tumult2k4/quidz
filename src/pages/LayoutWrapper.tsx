@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 const LayoutWrapper = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isCoach, setIsCoach] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -24,8 +25,13 @@ const LayoutWrapper = () => {
         .select("role")
         .eq("user_id", session.user.id);
 
-      if (roles && roles.some(r => r.role === "admin")) {
-        setIsAdmin(true);
+      if (roles) {
+        if (roles.some(r => r.role === "admin")) {
+          setIsAdmin(true);
+        }
+        if (roles.some(r => r.role === "coach")) {
+          setIsCoach(true);
+        }
       }
 
       setIsLoading(false);
@@ -53,7 +59,7 @@ const LayoutWrapper = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar isAdmin={isAdmin} />
+        <AppSidebar isAdmin={isAdmin} isCoach={isCoach} />
         <div className="flex-1 flex flex-col">
           <main className="flex-1 p-6 overflow-auto">
             <Outlet />
