@@ -501,14 +501,19 @@ const AdminSkills = () => {
                     <div className="space-y-2">
                       <Label>Kompetenzstufe</Label>
                       <Select
-                        value={editForm.competence_level}
-                        onValueChange={(value) => setEditForm({ ...editForm, competence_level: value })}
+                        value={editForm.competence_level || "__none__"}
+                        onValueChange={(value) =>
+                          setEditForm({
+                            ...editForm,
+                            competence_level: value === "__none__" ? "" : value,
+                          })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Stufe auswählen" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Keine Angabe</SelectItem>
+                          <SelectItem value="__none__">Keine Angabe</SelectItem>
                           <SelectItem value="Grundlagen">Grundlagen</SelectItem>
                           <SelectItem value="Fortgeschritten">Fortgeschritten</SelectItem>
                           <SelectItem value="Experte">Experte</SelectItem>
