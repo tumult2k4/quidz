@@ -161,6 +161,51 @@ Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;Programmierung;tr
         categoryById.add(cat.id);
       });
 
+      // Collect unique category names that need to be created
+      const categoriesToCreate = new Set<string>();
+      cards.forEach(card => {
+        if (card.category && card.category.trim()) {
+          const catValue = card.category.trim();
+          // Check if it doesn't exist as ID or name
+          if (!categoryById.has(catValue) && !categoryByName.has(catValue.toLowerCase())) {
+            categoriesToCreate.add(catValue);
+          }
+        }
+      });
+
+      // Create missing categories
+      if (categoriesToCreate.size > 0) {
+        const newCategories = Array.from(categoriesToCreate).map(name => ({
+          name,
+          created_by: user.id,
+        }));
+
+        const { data: createdCategories, error: createError } = await supabase
+          .from("categories")
+          .insert(newCategories)
+          .select("id, name");
+
+        if (createError) {
+          console.error("Error creating categories:", createError);
+          toast({
+            title: "Warnung",
+            description: `Einige Kategorien konnten nicht erstellt werden: ${createError.message}`,
+            variant: "destructive",
+          });
+        } else if (createdCategories) {
+          // Add newly created categories to the lookup map
+          createdCategories.forEach(cat => {
+            categoryByName.set(cat.name.toLowerCase(), cat.id);
+            categoryById.add(cat.id);
+          });
+          
+          toast({
+            title: "Kategorien erstellt",
+            description: `${createdCategories.length} neue Kategorie(n) wurden automatisch erstellt.`,
+          });
+        }
+      }
+
       const flashcardsToInsert = cards.map((card) => {
         // Determine category_id: check if card has category, resolve by name or ID
         let resolvedCategoryId: string | null = null;
@@ -283,7 +328,7 @@ Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;Programmierung;tr
                   <div>
                     <h4 className="font-semibold mb-2">Optionale Felder:</h4>
                     <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li><code className="bg-muted px-1 rounded">category</code> - Kategoriename (muss existieren)</li>
+                      <li><code className="bg-muted px-1 rounded">category</code> - Kategoriename (wird automatisch erstellt falls nicht vorhanden)</li>
                       <li><code className="bg-muted px-1 rounded">is_public</code> - Boolean (true/false) für öffentliche Karten</li>
                     </ul>
                   </div>
@@ -329,7 +374,7 @@ Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;Programmierung;tr
                   <p className="font-medium">Tipps:</p>
                   <ul className="list-disc list-inside text-muted-foreground mt-1">
                     <li>Kategorie pro Karte überschreibt die globale Auswahl</li>
-                    <li>Kategoriename muss exakt mit einer existierenden Kategorie übereinstimmen</li>
+                    <li>Neue Kategorien werden automatisch erstellt</li>
                     <li>Standard-Sichtbarkeit gilt für Karten ohne is_public</li>
                     <li>CSV-Dateien sollten Semikolon (;) als Trennzeichen verwenden</li>
                   </ul>
