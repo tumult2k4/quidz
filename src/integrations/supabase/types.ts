@@ -649,6 +649,90 @@ export type Database = {
           },
         ]
       }
+      skill_tasks: {
+        Row: {
+          created_at: string
+          id: string
+          skill_id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          skill_id: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          skill_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_tasks_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_tasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skills: {
+        Row: {
+          category: Database["public"]["Enums"]["skill_category"]
+          coach_comment: string | null
+          competence_level: string | null
+          created_at: string
+          description: string
+          id: string
+          is_integration_relevant: boolean | null
+          proof_file_url: string | null
+          proof_text: string | null
+          status: Database["public"]["Enums"]["skill_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["skill_category"]
+          coach_comment?: string | null
+          competence_level?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          is_integration_relevant?: boolean | null
+          proof_file_url?: string | null
+          proof_text?: string | null
+          status?: Database["public"]["Enums"]["skill_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["skill_category"]
+          coach_comment?: string | null
+          competence_level?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          is_integration_relevant?: boolean | null
+          proof_file_url?: string | null
+          proof_text?: string | null
+          status?: Database["public"]["Enums"]["skill_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           created_at: string | null
@@ -797,6 +881,17 @@ export type Database = {
         | "data_science"
         | "machine_learning"
         | "other"
+      skill_category:
+        | "handwerk"
+        | "digital"
+        | "sozial"
+        | "kreativ"
+        | "sonstiges"
+      skill_status:
+        | "in_pruefung"
+        | "integrationsrelevant"
+        | "validiert"
+        | "abgelehnt"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -932,6 +1027,13 @@ export const Constants = {
         "data_science",
         "machine_learning",
         "other",
+      ],
+      skill_category: ["handwerk", "digital", "sozial", "kreativ", "sonstiges"],
+      skill_status: [
+        "in_pruefung",
+        "integrationsrelevant",
+        "validiert",
+        "abgelehnt",
       ],
     },
   },

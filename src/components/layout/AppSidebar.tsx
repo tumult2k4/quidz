@@ -15,6 +15,7 @@ import {
   CalendarDays,
   MessagesSquare,
   Bot,
+  Lightbulb,
 } from "lucide-react";
 import logo from "@/assets/logoquidz.png";
 import {
@@ -48,6 +49,7 @@ export function AppSidebar({ isAdmin, isCoach }: AppSidebarProps) {
     { title: "Aufgaben", url: "/tasks", icon: CheckSquare },
     { title: "Dokumente", url: "/documents", icon: BookOpen },
     { title: "Absenzen", url: "/absences", icon: CalendarIcon },
+    { title: "Skills", url: "/skills", icon: Lightbulb },
     { title: "Lernkarten", url: "/flashcards", icon: BookOpen },
     { title: "Werkzeuge", url: "/tools", icon: Wrench },
     { title: "Kalender", url: "/calendar", icon: CalendarDays },
@@ -65,6 +67,7 @@ export function AppSidebar({ isAdmin, isCoach }: AppSidebarProps) {
     { title: "Dokumente", url: "/admin/documents", icon: FileText },
     { title: "Absenzen", url: "/admin/absences", icon: CalendarIcon },
     { title: "Teilnehmende", url: "/admin/users", icon: Users },
+    { title: "Skills", url: "/admin/skills", icon: Lightbulb },
     { title: "Lernkarten", url: "/admin/flashcards", icon: BookOpen },
     { title: "Werkzeuge", url: "/admin/tools", icon: Wrench },
     { title: "Kalender", url: "/calendar", icon: CalendarDays },
