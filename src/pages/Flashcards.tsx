@@ -7,6 +7,7 @@ import { FlashcardEditor } from "@/components/flashcards/FlashcardEditor";
 import { FlashcardFlipCard } from "@/components/flashcards/FlashcardFlipCard";
 import { BadgeDisplay } from "@/components/badges/BadgeDisplay";
 import { ExportPanel } from "@/components/flashcards/ExportPanel";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, 
@@ -17,7 +18,8 @@ import {
   Trash2,
   Award,
   CheckCircle2,
-  Circle
+  Circle,
+  Trophy
 } from "lucide-react";
 import {
   Select,
@@ -76,6 +78,8 @@ export default function Flashcards() {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [learnedCards, setLearnedCards] = useState<Set<string>>(new Set());
   const [badges, setBadges] = useState<any[]>([]);
+  const [sessionPoints, setSessionPoints] = useState(0);
+  const [totalPoints, setTotalPoints] = useState(0);
 
   useEffect(() => {
     fetchUser();
@@ -194,6 +198,7 @@ export default function Flashcards() {
 
     if (data) {
       setLearnedCards(new Set(data.map(p => p.flashcard_id)));
+      setTotalPoints(data.length);
     }
   };
 
@@ -265,6 +270,7 @@ export default function Flashcards() {
     }
     setLearningMode(true);
     setCurrentCardIndex(0);
+    setSessionPoints(0);
   };
 
   const nextCard = () => {
@@ -302,6 +308,8 @@ export default function Flashcards() {
 
       if (knewAnswer) {
         setLearnedCards(new Set([...learnedCards, currentCard.id]));
+        setSessionPoints(prev => prev + 1);
+        setTotalPoints(prev => prev + 1);
       }
 
       nextCard();
@@ -345,6 +353,7 @@ export default function Flashcards() {
 
   if (learningMode && flashcards.length > 0) {
     const currentCard = flashcards[currentCardIndex];
+    const progressPercentage = ((currentCardIndex + 1) / flashcards.length) * 100;
     
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6">
@@ -360,6 +369,32 @@ export default function Flashcards() {
               Beenden
             </Button>
           </div>
+
+          {/* Progress Section */}
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Trophy className="w-5 h-5" />
+                    <span className="font-semibold text-lg">
+                      Session: {sessionPoints} Punkte
+                    </span>
+                  </div>
+                  <div className="text-muted-foreground">
+                    Gesamt: {totalPoints} Punkte
+                  </div>
+                </div>
+                <Badge variant="secondary" className="text-sm">
+                  {Math.round(progressPercentage)}% abgeschlossen
+                </Badge>
+              </div>
+              <Progress value={progressPercentage} className="h-3" />
+              <p className="text-sm text-muted-foreground mt-2 text-center">
+                {sessionPoints} von {currentCardIndex + 1} Karten richtig beantwortet
+              </p>
+            </CardContent>
+          </Card>
 
           <FlashcardFlipCard
             frontText={currentCard.front_text}
