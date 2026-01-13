@@ -9,9 +9,10 @@ import { toast } from "sonner";
 
 interface MoodTrackerProps {
   userId: string;
+  compact?: boolean;
 }
 
-const MoodTracker = ({ userId }: MoodTrackerProps) => {
+const MoodTracker = ({ userId, compact = false }: MoodTrackerProps) => {
   const [moodValue, setMoodValue] = useState(5);
   const queryClient = useQueryClient();
 
@@ -36,9 +37,9 @@ const MoodTracker = ({ userId }: MoodTrackerProps) => {
   });
 
   const getMoodIcon = () => {
-    if (moodValue <= 3) return <Frown className="w-8 h-8 text-destructive" />;
-    if (moodValue <= 7) return <Meh className="w-8 h-8 text-primary" />;
-    return <Smile className="w-8 h-8 text-secondary" />;
+    if (moodValue <= 3) return <Frown className={`${compact ? "w-5 h-5" : "w-8 h-8"} text-destructive`} />;
+    if (moodValue <= 7) return <Meh className={`${compact ? "w-5 h-5" : "w-8 h-8"} text-primary`} />;
+    return <Smile className={`${compact ? "w-5 h-5" : "w-8 h-8"} text-secondary`} />;
   };
 
   const getMoodLabel = () => {
@@ -47,6 +48,39 @@ const MoodTracker = ({ userId }: MoodTrackerProps) => {
     if (moodValue <= 7) return "Gut";
     return "Sehr gut";
   };
+
+  if (compact) {
+    return (
+      <Card className="shadow-card">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardDescription className="text-xs">Stimmung</CardDescription>
+          <CardTitle className="text-2xl flex items-center gap-2">
+            {getMoodIcon()}
+            {getMoodLabel()}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          <div className="flex items-center gap-2">
+            <Slider
+              value={[moodValue]}
+              onValueChange={(value) => setMoodValue(value[0])}
+              min={1}
+              max={10}
+              step={1}
+              className="flex-1"
+            />
+            <Button
+              size="sm"
+              onClick={() => submitMoodMutation.mutate(moodValue)}
+              disabled={submitMoodMutation.isPending}
+            >
+              ✓
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="shadow-card">
