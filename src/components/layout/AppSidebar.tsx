@@ -16,6 +16,7 @@ import {
   MessagesSquare,
   Bot,
   Lightbulb,
+  ClipboardList,
 } from "lucide-react";
 import logo from "@/assets/logoquidz.png";
 import {
@@ -67,6 +68,7 @@ export function AppSidebar({ isAdmin, isCoach }: AppSidebarProps) {
     { title: "Dokumente", url: "/admin/documents", icon: FileText },
     { title: "Absenzen", url: "/admin/absences", icon: CalendarIcon },
     { title: "Teilnehmende", url: "/admin/users", icon: Users },
+    { title: "Berichte", url: "/admin/reports", icon: ClipboardList },
     { title: "Skills", url: "/admin/skills", icon: Lightbulb },
     { title: "Lernkarten", url: "/admin/flashcards", icon: BookOpen },
     { title: "Werkzeuge", url: "/admin/tools", icon: Wrench },
