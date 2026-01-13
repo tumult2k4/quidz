@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Shield, User, GraduationCap } from "lucide-react";
+import { Users, Shield, User, GraduationCap, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -23,10 +24,27 @@ interface Profile {
 }
 
 const AdminUsers = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserRole, setCurrentUserRole] = useState<"admin" | "coach" | "user">("user");
 
   const fetchUsers = async () => {
+    // Get current user's role
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      
+      if (roleData?.some(r => r.role === "admin")) {
+        setCurrentUserRole("admin");
+      } else if (roleData?.some(r => r.role === "coach")) {
+        setCurrentUserRole("coach");
+      }
+    }
+
     const { data: profilesData, error: profilesError } = await supabase
       .from("profiles")
       .select("*")
@@ -50,13 +68,23 @@ const AdminUsers = () => {
         .map(r => ({ role: r.role }))
     }));
 
-    setUsers(usersWithRoles);
+    // For coaches, only show participants (users without admin/coach role)
+    if (currentUserRole === "coach") {
+      const participants = usersWithRoles.filter(u => {
+        const role = getUserRole(u);
+        return role === "user";
+      });
+      setUsers(participants);
+    } else {
+      setUsers(usersWithRoles);
+    }
+
     setLoading(false);
   };
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [currentUserRole]);
 
   const setUserRole = async (userId: string, newRole: "admin" | "coach" | "user") => {
     // First, remove all existing roles (admin, coach) - keep 'user' as base
@@ -120,27 +148,43 @@ const AdminUsers = () => {
     }
   };
 
+  const handleUserClick = (userId: string) => {
+    navigate(`/admin/users/${userId}`);
+  };
+
   if (loading) return <div className="p-8">Lädt...</div>;
+
+  const isCoach = currentUserRole === "coach";
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Teilnehmendenverwaltung</h1>
-        <p className="text-muted-foreground">Verwalten Sie Teilnehmende und deren Rollen</p>
+        <h1 className="text-3xl font-bold">
+          {isCoach ? "Teilnehmende" : "Teilnehmendenverwaltung"}
+        </h1>
+        <p className="text-muted-foreground">
+          {isCoach 
+            ? "Übersicht aller Teilnehmenden und deren Fortschritt" 
+            : "Verwalten Sie Teilnehmende und deren Rollen"}
+        </p>
       </div>
 
       <div className="grid gap-4">
         {users.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="p-8 text-center text-muted-foreground">
-              Keine User vorhanden
+              {isCoach ? "Keine Teilnehmenden vorhanden" : "Keine User vorhanden"}
             </CardContent>
           </Card>
         ) : (
           users.map((user) => {
             const userRole = getUserRole(user);
             return (
-              <Card key={user.id} className="shadow-card">
+              <Card 
+                key={user.id} 
+                className={`shadow-card ${isCoach || userRole === "user" ? "cursor-pointer hover:bg-accent/50 transition-colors" : ""}`}
+                onClick={() => (isCoach || userRole === "user") && handleUserClick(user.id)}
+              >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4 flex-1">
@@ -163,36 +207,52 @@ const AdminUsers = () => {
                         </div>
                       </div>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          Rolle ändern
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => setUserRole(user.id, "admin")}
-                          disabled={userRole === "admin"}
-                        >
-                          <Shield className="w-4 h-4 mr-2" />
-                          Admin
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setUserRole(user.id, "coach")}
-                          disabled={userRole === "coach"}
-                        >
-                          <GraduationCap className="w-4 h-4 mr-2" />
-                          Coach
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setUserRole(user.id, "user")}
-                          disabled={userRole === "user"}
-                        >
-                          <User className="w-4 h-4 mr-2" />
-                          Teilnehmer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-2">
+                      {(isCoach || userRole === "user") && (
+                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                      )}
+                      {!isCoach && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="outline" size="sm">
+                              Rolle ändern
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setUserRole(user.id, "admin");
+                              }}
+                              disabled={userRole === "admin"}
+                            >
+                              <Shield className="w-4 h-4 mr-2" />
+                              Admin
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setUserRole(user.id, "coach");
+                              }}
+                              disabled={userRole === "coach"}
+                            >
+                              <GraduationCap className="w-4 h-4 mr-2" />
+                              Coach
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setUserRole(user.id, "user");
+                              }}
+                              disabled={userRole === "user"}
+                            >
+                              <User className="w-4 h-4 mr-2" />
+                              Teilnehmer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
               </Card>
