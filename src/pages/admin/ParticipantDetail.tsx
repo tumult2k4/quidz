@@ -19,7 +19,10 @@ import {
   Clock,
   Smile,
   Meh,
-  Frown
+  Frown,
+  Lightbulb,
+  ClipboardList,
+  Star
 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -76,6 +79,55 @@ interface Badge {
   earned_at: string;
 }
 
+interface Skill {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  status: string;
+  is_integration_relevant: boolean;
+  coach_comment: string | null;
+  competence_level: string | null;
+  created_at: string;
+}
+
+interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string | null;
+  priority: string | null;
+  due_date: string | null;
+  category: string | null;
+  created_at: string;
+}
+
+const statusLabels: Record<string, string> = {
+  in_pruefung: "In Prüfung",
+  integrationsrelevant: "Integrationsrelevant",
+  validiert: "Validiert",
+  abgelehnt: "Abgelehnt",
+};
+
+const statusColors: Record<string, string> = {
+  in_pruefung: "bg-yellow-100 text-yellow-800",
+  integrationsrelevant: "bg-purple-100 text-purple-800",
+  validiert: "bg-green-100 text-green-800",
+  abgelehnt: "bg-red-100 text-red-800",
+};
+
+const taskStatusLabels: Record<string, string> = {
+  open: "Offen",
+  in_progress: "In Bearbeitung",
+  completed: "Erledigt",
+};
+
+const taskPriorityLabels: Record<string, string> = {
+  low: "Niedrig",
+  medium: "Mittel",
+  high: "Hoch",
+};
+
 const ParticipantDetail = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -87,6 +139,8 @@ const ParticipantDetail = () => {
   const [feedbackAnswers, setFeedbackAnswers] = useState<FeedbackAnswer[]>([]);
   const [moodEntries, setMoodEntries] = useState<MoodEntry[]>([]);
   const [badges, setBadges] = useState<Badge[]>([]);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [totalFlashcards, setTotalFlashcards] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -107,7 +161,9 @@ const ParticipantDetail = () => {
       feedbackRes,
       moodRes,
       badgesRes,
-      flashcardsRes
+      flashcardsRes,
+      skillsRes,
+      tasksRes
     ] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).single(),
       supabase.from("absences").select("*").eq("user_id", userId).order("date", { ascending: false }),
@@ -116,7 +172,9 @@ const ParticipantDetail = () => {
       supabase.from("feedback_answers").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
       supabase.from("mood_entries").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
       supabase.from("badges").select("*").eq("user_id", userId).order("earned_at", { ascending: false }),
-      supabase.from("flashcards").select("id", { count: "exact" }).eq("is_public", true)
+      supabase.from("flashcards").select("id", { count: "exact" }).eq("is_public", true),
+      supabase.from("skills").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
+      supabase.from("tasks").select("*").eq("assigned_to", userId).order("created_at", { ascending: false })
     ]);
 
     if (profileRes.data) setProfile(profileRes.data);
@@ -127,6 +185,8 @@ const ParticipantDetail = () => {
     if (moodRes.data) setMoodEntries(moodRes.data);
     if (badgesRes.data) setBadges(badgesRes.data);
     if (flashcardsRes.count) setTotalFlashcards(flashcardsRes.count);
+    if (skillsRes.data) setSkills(skillsRes.data);
+    if (tasksRes.data) setTasks(tasksRes.data);
 
     setLoading(false);
   };
@@ -276,8 +336,16 @@ const ParticipantDetail = () => {
       </Card>
 
       {/* Tabs */}
-      <Tabs defaultValue="absences" className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+      <Tabs defaultValue="skills" className="space-y-4">
+        <TabsList className="grid grid-cols-6 w-full max-w-4xl">
+          <TabsTrigger value="skills" className="flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Skills ({skills.length})
+          </TabsTrigger>
+          <TabsTrigger value="tasks" className="flex items-center gap-2">
+            <ClipboardList className="w-4 h-4" />
+            Aufgaben ({tasks.length})
+          </TabsTrigger>
           <TabsTrigger value="absences" className="flex items-center gap-2">
             <Calendar className="w-4 h-4" />
             Absenzen ({absences.length})
@@ -295,6 +363,112 @@ const ParticipantDetail = () => {
             Abzeichen ({badges.length})
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="skills">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {skills.length === 0 ? (
+              <Card className="col-span-full">
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  Keine Skills vorhanden
+                </CardContent>
+              </Card>
+            ) : (
+              skills.map((skill) => (
+                <Card key={skill.id}>
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start gap-2">
+                      <CardTitle className="text-lg">{skill.title}</CardTitle>
+                      <Badge variant="secondary" className="shrink-0">
+                        {skill.category}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className={`${statusColors[skill.status] || 'bg-gray-100 text-gray-800'}`}>
+                        {statusLabels[skill.status] || skill.status}
+                      </Badge>
+                      {skill.is_integration_relevant && (
+                        <Badge variant="outline" className="text-purple-600 border-purple-300">
+                          <Star className="w-3 h-3 mr-1" />
+                          Relevant
+                        </Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                      {skill.description}
+                    </p>
+                    {skill.competence_level && (
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Stufe: {skill.competence_level}
+                      </p>
+                    )}
+                    {skill.coach_comment && (
+                      <p className="text-xs text-muted-foreground italic border-l-2 border-primary pl-2 mt-2">
+                        Coach: {skill.coach_comment}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {format(new Date(skill.created_at), "dd.MM.yyyy", { locale: de })}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="tasks">
+          <div className="grid gap-3">
+            {tasks.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  Keine Aufgaben vorhanden
+                </CardContent>
+              </Card>
+            ) : (
+              tasks.map((task) => (
+                <Card key={task.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <p className="font-medium">{task.title}</p>
+                        {task.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                            {task.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>
+                            {taskStatusLabels[task.status || 'open'] || task.status}
+                          </Badge>
+                          {task.priority && (
+                            <Badge variant="outline">
+                              {taskPriorityLabels[task.priority] || task.priority}
+                            </Badge>
+                          )}
+                          {task.category && (
+                            <Badge variant="outline">{task.category}</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {task.due_date && (
+                          <p className="text-sm text-muted-foreground">
+                            Fällig: {format(new Date(task.due_date), "dd.MM.yyyy", { locale: de })}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Erstellt: {format(new Date(task.created_at), "dd.MM.yyyy", { locale: de })}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
 
         <TabsContent value="absences">
           <div className="grid gap-3">
