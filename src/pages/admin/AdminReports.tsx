@@ -74,6 +74,19 @@ const AdminReports = () => {
 
       if (profilesError) throw profilesError;
 
+      // Fetch user roles to filter out admins and coaches
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["admin", "coach"]);
+
+      const adminCoachIds = new Set((rolesData || []).map((r) => r.user_id));
+
+      // Filter to only show participants (users without admin/coach roles)
+      const participantsOnly = (profilesData || []).filter(
+        (p) => !adminCoachIds.has(p.id)
+      );
+
       // Map profile info to reports
       const reportsWithProfiles = (reportsData || []).map((report) => ({
         ...report,
@@ -82,7 +95,7 @@ const AdminReports = () => {
       }));
 
       setReports(reportsWithProfiles);
-      setParticipants(profilesData || []);
+      setParticipants(participantsOnly);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Fehler beim Laden der Berichte");
