@@ -31,6 +31,8 @@ import Flashcards from "./pages/Flashcards";
 import AdminFlashcards from "./pages/admin/AdminFlashcards";
 import Skills from "./pages/Skills";
 import AdminSkills from "./pages/admin/AdminSkills";
+import AdminReports from "./pages/admin/AdminReports";
+import ReportEditor from "./pages/admin/ReportEditor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,6 +72,8 @@ const App = () => (
             <Route path="/admin/ai" element={<AdminAI />} />
             <Route path="/admin/flashcards" element={<AdminFlashcards />} />
             <Route path="/admin/skills" element={<AdminSkills />} />
+            <Route path="/admin/reports" element={<AdminReports />} />
+            <Route path="/admin/reports/:reportId" element={<ReportEditor />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

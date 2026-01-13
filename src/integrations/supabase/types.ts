@@ -649,6 +649,78 @@ export type Database = {
           },
         ]
       }
+      reports: {
+        Row: {
+          attendance_notes: string | null
+          attendance_summary: Json | null
+          behavior_notes: string | null
+          coach_id: string
+          created_at: string
+          id: string
+          learning_notes: string | null
+          learning_summary: Json | null
+          mood_summary: string | null
+          outlook: string | null
+          overall_assessment: string | null
+          period_end: string
+          period_start: string
+          program_type: string | null
+          skills_notes: string | null
+          skills_summary: Json | null
+          status: string
+          tasks_notes: string | null
+          tasks_summary: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attendance_notes?: string | null
+          attendance_summary?: Json | null
+          behavior_notes?: string | null
+          coach_id: string
+          created_at?: string
+          id?: string
+          learning_notes?: string | null
+          learning_summary?: Json | null
+          mood_summary?: string | null
+          outlook?: string | null
+          overall_assessment?: string | null
+          period_end: string
+          period_start: string
+          program_type?: string | null
+          skills_notes?: string | null
+          skills_summary?: Json | null
+          status?: string
+          tasks_notes?: string | null
+          tasks_summary?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attendance_notes?: string | null
+          attendance_summary?: Json | null
+          behavior_notes?: string | null
+          coach_id?: string
+          created_at?: string
+          id?: string
+          learning_notes?: string | null
+          learning_summary?: Json | null
+          mood_summary?: string | null
+          outlook?: string | null
+          overall_assessment?: string | null
+          period_end?: string
+          period_start?: string
+          program_type?: string | null
+          skills_notes?: string | null
+          skills_summary?: Json | null
+          status?: string
+          tasks_notes?: string | null
+          tasks_summary?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       skill_tasks: {
         Row: {
           created_at: string
