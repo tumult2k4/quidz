@@ -18,6 +18,7 @@ import AdminTasks from "./pages/admin/AdminTasks";
 import AdminDocuments from "./pages/admin/AdminDocuments";
 import AdminAbsences from "./pages/admin/AdminAbsences";
 import AdminUsers from "./pages/admin/AdminUsers";
+import ParticipantDetail from "./pages/admin/ParticipantDetail";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminTools from "./pages/admin/AdminTools";
 import Tools from "./pages/Tools";
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/admin/documents" element={<AdminDocuments />} />
             <Route path="/admin/absences" element={<AdminAbsences />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/users/:userId" element={<ParticipantDetail />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/tools" element={<AdminTools />} />
             <Route path="/admin/feedback" element={<AdminFeedback />} />
