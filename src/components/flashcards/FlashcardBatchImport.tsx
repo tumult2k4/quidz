@@ -44,6 +44,7 @@ interface ImportCard {
   front_text: string;
   back_text: string;
   is_public?: boolean;
+  category?: string; // Category name or ID
 }
 
 export function FlashcardBatchImport({ categories, onSuccess }: FlashcardBatchImportProps) {
@@ -59,18 +60,20 @@ export function FlashcardBatchImport({ categories, onSuccess }: FlashcardBatchIm
   const exampleJson = `[
   {
     "front_text": "Was ist React?",
-    "back_text": "Eine JavaScript-Bibliothek für Benutzeroberflächen"
+    "back_text": "Eine JavaScript-Bibliothek für Benutzeroberflächen",
+    "category": "Digital Skills"
   },
   {
     "front_text": "Was ist TypeScript?",
     "back_text": "Eine typisierte Erweiterung von JavaScript",
+    "category": "Programmierung",
     "is_public": true
   }
 ]`;
 
-  const exampleCsv = `front_text;back_text;is_public
-Was ist React?;Eine JavaScript-Bibliothek für Benutzeroberflächen;
-Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;true`;
+  const exampleCsv = `front_text;back_text;category;is_public
+Was ist React?;Eine JavaScript-Bibliothek für Benutzeroberflächen;Digital Skills;
+Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;Programmierung;true`;
 
   const parseCSV = (csvText: string): ImportCard[] => {
     const result = Papa.parse(csvText, {
@@ -87,6 +90,7 @@ Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;true`;
       front_text: row.front_text || row.Frage || row.vorderseite || "",
       back_text: row.back_text || row.Antwort || row.rückseite || "",
       is_public: row.is_public === "true" || row.is_public === "1" || row.öffentlich === "true",
+      category: row.category || row.Kategorie || row.kategorie || "",
     }));
   };
 
@@ -149,13 +153,45 @@ Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;true`;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Nicht authentifiziert");
 
-      const flashcardsToInsert = cards.map((card) => ({
-        front_text: card.front_text.trim().substring(0, 10000),
-        back_text: card.back_text.trim().substring(0, 10000),
-        category_id: categoryId === "none" ? null : categoryId,
-        is_public: card.is_public ?? isPublic,
-        created_by: user.id,
-      }));
+      // Build category lookup map (by name and by ID)
+      const categoryByName = new Map<string, string>();
+      const categoryById = new Set<string>();
+      categories.forEach(cat => {
+        categoryByName.set(cat.name.toLowerCase(), cat.id);
+        categoryById.add(cat.id);
+      });
+
+      const flashcardsToInsert = cards.map((card) => {
+        // Determine category_id: check if card has category, resolve by name or ID
+        let resolvedCategoryId: string | null = null;
+        
+        if (card.category && card.category.trim()) {
+          const catValue = card.category.trim();
+          // Check if it's a valid category ID
+          if (categoryById.has(catValue)) {
+            resolvedCategoryId = catValue;
+          } else {
+            // Try to find by name (case-insensitive)
+            const foundId = categoryByName.get(catValue.toLowerCase());
+            if (foundId) {
+              resolvedCategoryId = foundId;
+            }
+          }
+        }
+        
+        // Fall back to global category selection if no per-card category
+        if (!resolvedCategoryId && categoryId !== "none") {
+          resolvedCategoryId = categoryId;
+        }
+
+        return {
+          front_text: card.front_text.trim().substring(0, 10000),
+          back_text: card.back_text.trim().substring(0, 10000),
+          category_id: resolvedCategoryId,
+          is_public: card.is_public ?? isPublic,
+          created_by: user.id,
+        };
+      });
 
       const { error } = await supabase
         .from("flashcards")
@@ -247,6 +283,7 @@ Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;true`;
                   <div>
                     <h4 className="font-semibold mb-2">Optionale Felder:</h4>
                     <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                      <li><code className="bg-muted px-1 rounded">category</code> - Kategoriename (muss existieren)</li>
                       <li><code className="bg-muted px-1 rounded">is_public</code> - Boolean (true/false) für öffentliche Karten</li>
                     </ul>
                   </div>
@@ -264,6 +301,7 @@ Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;true`;
                     <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                       <li><code className="bg-muted px-1 rounded">front_text</code> - Der Text auf der Vorderseite (Frage)</li>
                       <li><code className="bg-muted px-1 rounded">back_text</code> - Der Text auf der Rückseite (Antwort)</li>
+                      <li><code className="bg-muted px-1 rounded">category</code> - Optional: Kategoriename</li>
                       <li><code className="bg-muted px-1 rounded">is_public</code> - Optional: "true" oder "false"</li>
                     </ul>
                   </div>
@@ -272,6 +310,7 @@ Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;true`;
                     <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                       <li><code className="bg-muted px-1 rounded">Frage</code> oder <code className="bg-muted px-1 rounded">vorderseite</code> statt front_text</li>
                       <li><code className="bg-muted px-1 rounded">Antwort</code> oder <code className="bg-muted px-1 rounded">rückseite</code> statt back_text</li>
+                      <li><code className="bg-muted px-1 rounded">Kategorie</code> statt category</li>
                       <li><code className="bg-muted px-1 rounded">öffentlich</code> statt is_public</li>
                     </ul>
                   </div>
@@ -289,10 +328,10 @@ Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;true`;
                 <div className="text-sm">
                   <p className="font-medium">Tipps:</p>
                   <ul className="list-disc list-inside text-muted-foreground mt-1">
-                    <li>Kategorie kann global für alle Karten ausgewählt werden</li>
+                    <li>Kategorie pro Karte überschreibt die globale Auswahl</li>
+                    <li>Kategoriename muss exakt mit einer existierenden Kategorie übereinstimmen</li>
                     <li>Standard-Sichtbarkeit gilt für Karten ohne is_public</li>
                     <li>CSV-Dateien sollten Semikolon (;) als Trennzeichen verwenden</li>
-                    <li>Bei CSV mit Kommas im Text: Werte in Anführungszeichen setzen</li>
                   </ul>
                 </div>
               </div>
@@ -303,7 +342,7 @@ Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;true`;
       <CardContent className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label>Kategorie (für alle Karten)</Label>
+            <Label>Standard-Kategorie (falls nicht pro Karte angegeben)</Label>
             <Select value={categoryId} onValueChange={setCategoryId}>
               <SelectTrigger>
                 <SelectValue placeholder="Kategorie wählen (optional)" />
