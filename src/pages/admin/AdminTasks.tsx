@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Users, Trash2, X, Upload, Link as LinkIcon, Image as ImageIcon, File, Edit } from "lucide-react";
+import { Plus, Users, Trash2, X, Upload, Link as LinkIcon, Image as ImageIcon, File, Edit, Search, Filter } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -55,6 +63,13 @@ const AdminTasks = () => {
   const [uploading, setUploading] = useState(false);
   const [linkInput, setLinkInput] = useState("");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  
+  // Filter states
+  const [statusFilter, setStatusFilter] = useState<string>("open");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
+  
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -295,6 +310,48 @@ const AdminTasks = () => {
     setIsDialogOpen(true);
   };
 
+  // Filtered tasks
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      // Status filter
+      if (statusFilter !== "all" && task.status !== statusFilter) return false;
+      
+      // Priority filter
+      if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
+      
+      // Assignee filter
+      if (assigneeFilter !== "all" && task.assigned_to !== assigneeFilter) return false;
+      
+      // Search query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesTitle = task.title.toLowerCase().includes(query);
+        const matchesDescription = task.description?.toLowerCase().includes(query);
+        const matchesCategory = task.category?.toLowerCase().includes(query);
+        const matchesAssignee = task.profiles?.full_name?.toLowerCase().includes(query);
+        if (!matchesTitle && !matchesDescription && !matchesCategory && !matchesAssignee) return false;
+      }
+      
+      return true;
+    });
+  }, [tasks, statusFilter, priorityFilter, searchQuery, assigneeFilter]);
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "completed": return "Erledigt";
+      case "in_progress": return "In Arbeit";
+      default: return "Offen";
+    }
+  };
+
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case "high": return "Hoch";
+      case "medium": return "Mittel";
+      default: return "Niedrig";
+    }
+  };
+
   if (loading) return <div className="p-8">Lädt...</div>;
 
   return (
@@ -517,81 +574,173 @@ const AdminTasks = () => {
         </Dialog>
       </div>
 
-      <div className="grid gap-4">
-        {tasks.length === 0 ? (
-          <Card className="shadow-card">
-            <CardContent className="p-8 text-center text-muted-foreground">
-              Noch keine Aufgaben vorhanden
-            </CardContent>
-          </Card>
-        ) : (
-          tasks.map((task) => (
-            <Card key={task.id} className="shadow-card">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <CardTitle className="text-xl mb-2">{task.title}</CardTitle>
-                    {task.description && (
-                      <CardDescription className="mb-3">{task.description}</CardDescription>
-                    )}
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <Badge variant={task.status === "completed" ? "default" : "outline"}>
-                        {task.status === "completed" ? "Erledigt" : task.status === "in_progress" ? "In Arbeit" : "Offen"}
-                      </Badge>
-                      <Badge variant={task.priority === "high" ? "destructive" : "secondary"}>
-                        {task.priority === "high" ? "Hoch" : task.priority === "medium" ? "Mittel" : "Niedrig"}
-                      </Badge>
-                      {task.assign_to_all ? (
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          Alle Teilnehmer
-                        </Badge>
-                      ) : task.profiles?.full_name && (
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          {task.profiles.full_name}
-                        </Badge>
-                      )}
-                    </div>
-                    {task.links && task.links.length > 0 && (
-                      <div className="space-y-1 mb-2">
-                        {task.links.map((link, idx) => (
-                          <a key={idx} href={link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary hover:underline">
-                            <LinkIcon className="w-3 h-3" />
-                            {link}
-                          </a>
-                        ))}
+      {/* Filter Section */}
+      <Card className="shadow-card">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Aufgaben suchen..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle Status</SelectItem>
+                  <SelectItem value="open">Offen</SelectItem>
+                  <SelectItem value="in_progress">In Arbeit</SelectItem>
+                  <SelectItem value="completed">Erledigt</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Priorität" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle Prioritäten</SelectItem>
+                  <SelectItem value="high">Hoch</SelectItem>
+                  <SelectItem value="medium">Mittel</SelectItem>
+                  <SelectItem value="low">Niedrig</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <Users className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Zugewiesen an" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle Teilnehmer</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.full_name || user.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="mt-3 text-sm text-muted-foreground">
+            {filteredTasks.length} von {tasks.length} Aufgaben
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tasks Table */}
+      <Card className="shadow-card">
+        <CardContent className="p-0">
+          {filteredTasks.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              {tasks.length === 0 ? "Noch keine Aufgaben vorhanden" : "Keine Aufgaben gefunden"}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Titel</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Priorität</TableHead>
+                  <TableHead>Zugewiesen an</TableHead>
+                  <TableHead>Kategorie</TableHead>
+                  <TableHead>Fällig</TableHead>
+                  <TableHead className="text-right">Aktionen</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredTasks.map((task) => (
+                  <TableRow key={task.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{task.title}</div>
+                        {task.description && (
+                          <div className="text-sm text-muted-foreground line-clamp-1">
+                            {task.description}
+                          </div>
+                        )}
+                        <div className="flex gap-1 mt-1">
+                          {task.image_url && (
+                            <Badge variant="outline" className="text-xs py-0">
+                              <ImageIcon className="w-3 h-3 mr-1" />
+                              Bild
+                            </Badge>
+                          )}
+                          {task.file_url && (
+                            <Badge variant="outline" className="text-xs py-0">
+                              <File className="w-3 h-3 mr-1" />
+                              Datei
+                            </Badge>
+                          )}
+                          {task.links && task.links.length > 0 && (
+                            <Badge variant="outline" className="text-xs py-0">
+                              <LinkIcon className="w-3 h-3 mr-1" />
+                              {task.links.length} Link{task.links.length > 1 ? "s" : ""}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    )}
-                    <div className="flex gap-2 flex-wrap">
-                      {task.image_url && (
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <ImageIcon className="w-3 h-3" />
-                          Bild
-                        </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={task.status === "completed" ? "default" : task.status === "in_progress" ? "secondary" : "outline"}>
+                        {getStatusLabel(task.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={task.priority === "high" ? "destructive" : "secondary"}>
+                        {getPriorityLabel(task.priority)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {task.assign_to_all ? (
+                        <span className="flex items-center gap-1 text-sm">
+                          <Users className="w-4 h-4" />
+                          Alle
+                        </span>
+                      ) : task.profiles?.full_name ? (
+                        <span className="text-sm">{task.profiles.full_name}</span>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">—</span>
                       )}
-                      {task.file_url && (
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <File className="w-3 h-3" />
-                          Datei
-                        </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {task.category ? (
+                        <Badge variant="outline">{task.category}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
                       )}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEditTask(task)}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => deleteTask(task.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-          ))
-        )}
-      </div>
+                    </TableCell>
+                    <TableCell>
+                      {task.due_date ? (
+                        <span className="text-sm">{new Date(task.due_date).toLocaleDateString("de-CH")}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleEditTask(task)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => deleteTask(task.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
