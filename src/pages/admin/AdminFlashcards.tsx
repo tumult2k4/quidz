@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ExportPanel } from "@/components/flashcards/ExportPanel";
+import { FlashcardBatchImport } from "@/components/flashcards/FlashcardBatchImport";
 import {
   Dialog,
   DialogContent,
@@ -449,6 +450,10 @@ export default function AdminFlashcards() {
         </TabsContent>
 
         <TabsContent value="flashcards" className="space-y-4">
+          <FlashcardBatchImport 
+            categories={categories} 
+            onSuccess={fetchFlashcards} 
+          />
           <ExportPanel flashcards={flashcards} title="Alle Lernkarten" />
           
           <Card>
