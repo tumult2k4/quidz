@@ -50,7 +50,7 @@ export function FlashcardBatchImport({ categories, onSuccess }: FlashcardBatchIm
   const { toast } = useToast();
   const [jsonInput, setJsonInput] = useState("");
   const [csvInput, setCsvInput] = useState("");
-  const [categoryId, setCategoryId] = useState<string>("");
+  const [categoryId, setCategoryId] = useState<string>("none");
   const [isPublic, setIsPublic] = useState(false);
   const [loading, setLoading] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -152,7 +152,7 @@ Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;true`;
       const flashcardsToInsert = cards.map((card) => ({
         front_text: card.front_text.trim().substring(0, 10000),
         back_text: card.back_text.trim().substring(0, 10000),
-        category_id: categoryId || null,
+        category_id: categoryId === "none" ? null : categoryId,
         is_public: card.is_public ?? isPublic,
         created_by: user.id,
       }));
@@ -170,7 +170,7 @@ Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;true`;
 
       setJsonInput("");
       setCsvInput("");
-      setCategoryId("");
+      setCategoryId("none");
       onSuccess();
     } catch (error: any) {
       console.error("Error importing flashcards:", error);
@@ -309,7 +309,7 @@ Was ist TypeScript?;Eine typisierte Erweiterung von JavaScript;true`;
                 <SelectValue placeholder="Kategorie wählen (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Keine Kategorie</SelectItem>
+                <SelectItem value="none">Keine Kategorie</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     {cat.name}
