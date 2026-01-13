@@ -338,11 +338,13 @@ const AdminSkills = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle Teilnehmer</SelectItem>
-                {profiles.map((profile) => (
-                  <SelectItem key={profile.id} value={profile.id}>
-                    {profile.full_name || profile.email}
-                  </SelectItem>
-                ))}
+                {profiles
+                  .filter((profile) => profile.id && profile.id.trim() !== "")
+                  .map((profile) => (
+                    <SelectItem key={profile.id} value={profile.id}>
+                      {profile.full_name || profile.email}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
