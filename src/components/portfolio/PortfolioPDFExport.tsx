@@ -303,18 +303,20 @@ export function PortfolioPDFExport() {
             pdf.setFont("helvetica", "bold");
             pdf.text(`• ${skill.title}`, margin + 4, yPos);
 
-            // Status badge
-            const statusText = skillStatusLabels[skill.status] || skill.status;
-            const statusColor: [number, number, number] = skill.status === "bestaetigt" 
-              ? [34, 197, 94] 
-              : skill.status === "abgelehnt" 
-                ? [239, 68, 68] 
-                : [234, 179, 8];
-            
-            pdf.setFontSize(8);
-            pdf.setTextColor(...statusColor);
-            const statusX = margin + 8 + pdf.getTextWidth(`• ${skill.title}`);
-            pdf.text(`[${statusText}]`, statusX + 3, yPos);
+            // Status badge - only show if status is defined in labels
+            const statusText = skillStatusLabels[skill.status];
+            if (statusText) {
+              const statusColor: [number, number, number] = skill.status === "bestaetigt" 
+                ? [34, 197, 94] 
+                : skill.status === "abgelehnt" 
+                  ? [239, 68, 68] 
+                  : [234, 179, 8];
+              
+              pdf.setFontSize(8);
+              pdf.setTextColor(...statusColor);
+              const statusX = margin + 8 + pdf.getTextWidth(`• ${skill.title}`);
+              pdf.text(`[${statusText}]`, statusX + 3, yPos);
+            }
             
             yPos += 5;
 
