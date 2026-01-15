@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FileDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
+import logoImage from "@/assets/logoquidz.png";
 
 interface Skill {
   id: string;
@@ -24,6 +25,7 @@ interface Project {
   category: string;
   tags: string[];
   project_url: string | null;
+  image_url: string | null;
   created_at: string;
   skills?: { id: string; title: string; category: string }[];
 }
@@ -31,6 +33,7 @@ interface Project {
 interface Profile {
   full_name: string | null;
   email: string;
+  avatar_url: string | null;
 }
 
 const skillCategoryLabels: Record<string, string> = {
@@ -56,6 +59,40 @@ const projectCategoryLabels: Record<string, string> = {
   other: "Sonstiges",
 };
 
+// Helper to convert image URL to base64
+const imageToBase64 = async (url: string): Promise<string | null> => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+};
+
+// Helper to load local image as base64
+const loadLocalImage = (src: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+};
+
 export function PortfolioPDFExport() {
   const [exporting, setExporting] = useState(false);
 
@@ -69,7 +106,7 @@ export function PortfolioPDFExport() {
       // Fetch profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, email")
+        .select("full_name, email, avatar_url")
         .eq("id", user.id)
         .single();
 
@@ -107,6 +144,28 @@ export function PortfolioPDFExport() {
         })
       );
 
+      // Load logo
+      let logoBase64: string | null = null;
+      try {
+        logoBase64 = await loadLocalImage(logoImage);
+      } catch (e) {
+        console.warn("Could not load logo:", e);
+      }
+
+      // Load avatar
+      let avatarBase64: string | null = null;
+      if (profile?.avatar_url) {
+        avatarBase64 = await imageToBase64(profile.avatar_url);
+      }
+
+      // Pre-load project images
+      const projectImages: Record<string, string | null> = {};
+      for (const project of projectsWithSkills) {
+        if (project.image_url) {
+          projectImages[project.id] = await imageToBase64(project.image_url);
+        }
+      }
+
       // Create PDF
       const pdf = new jsPDF({
         orientation: "portrait",
@@ -138,31 +197,60 @@ export function PortfolioPDFExport() {
 
       // Header with gradient-like background
       pdf.setFillColor(...primaryColor);
-      pdf.rect(0, 0, pageWidth, 50, "F");
+      pdf.rect(0, 0, pageWidth, 55, "F");
 
-      // Logo text (since we can't easily embed image)
+      // Add logo if available
+      if (logoBase64) {
+        try {
+          pdf.addImage(logoBase64, "PNG", margin, 12, 35, 35);
+        } catch (e) {
+          console.warn("Could not add logo to PDF:", e);
+          // Fallback to text
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFontSize(28);
+          pdf.setFont("helvetica", "bold");
+          pdf.text("QUIDZ", margin, 30);
+        }
+      } else {
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(28);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("QUIDZ", margin, 30);
+      }
+
+      // Title text
       pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(28);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("QUIDZ", margin, 25);
-
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "normal");
-      pdf.text("Kompetenz-Portfolio", margin, 35);
+      pdf.text("Kompetenz-Portfolio", margin + (logoBase64 ? 40 : 0), 40);
 
-      // Profile info on header
+      // Profile info on header with avatar
       if (profile) {
+        const rightSide = pageWidth - margin;
+        
+        // Add avatar if available
+        if (avatarBase64) {
+          try {
+            // Draw circular avatar (approximation with rounded rect)
+            pdf.addImage(avatarBase64, "JPEG", rightSide - 25, 12, 25, 25);
+          } catch (e) {
+            console.warn("Could not add avatar to PDF:", e);
+          }
+        }
+
         pdf.setFontSize(14);
         pdf.setFont("helvetica", "bold");
         const nameText = profile.full_name || "Unbekannt";
-        pdf.text(nameText, pageWidth - margin - pdf.getTextWidth(nameText), 25);
+        const nameX = avatarBase64 ? rightSide - 30 - pdf.getTextWidth(nameText) : rightSide - pdf.getTextWidth(nameText);
+        pdf.text(nameText, nameX, 25);
         
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "normal");
-        pdf.text(profile.email, pageWidth - margin - pdf.getTextWidth(profile.email), 33);
+        const emailX = avatarBase64 ? rightSide - 30 - pdf.getTextWidth(profile.email) : rightSide - pdf.getTextWidth(profile.email);
+        pdf.text(profile.email, emailX, 33);
       }
 
-      yPos = 65;
+      yPos = 70;
 
       // Date
       pdf.setTextColor(...mutedColor);
@@ -276,24 +364,45 @@ export function PortfolioPDFExport() {
         yPos += 12;
 
         for (const project of projectsWithSkills) {
-          checkPageBreak(40);
+          // Check if we need space for image + content
+          const hasImage = project.image_url && projectImages[project.id];
+          const neededHeight = hasImage ? 60 : 40;
+          checkPageBreak(neededHeight);
+
+          const projectStartY = yPos;
+
+          // Project image on the left if available
+          let textStartX = margin;
+          let textWidth = contentWidth;
+          
+          if (hasImage && projectImages[project.id]) {
+            try {
+              const imgWidth = 40;
+              const imgHeight = 30;
+              pdf.addImage(projectImages[project.id]!, "JPEG", margin, yPos, imgWidth, imgHeight);
+              textStartX = margin + imgWidth + 6;
+              textWidth = contentWidth - imgWidth - 6;
+            } catch (e) {
+              console.warn("Could not add project image:", e);
+            }
+          }
 
           // Project card background
           pdf.setFillColor(249, 250, 251);
-          pdf.roundedRect(margin, yPos - 4, contentWidth, 8, 2, 2, "F");
+          pdf.roundedRect(textStartX, yPos - 2, textWidth, 8, 2, 2, "F");
 
           // Project title
           pdf.setTextColor(...textColor);
           pdf.setFontSize(12);
           pdf.setFont("helvetica", "bold");
-          pdf.text(project.title, margin + 4, yPos + 2);
+          pdf.text(project.title, textStartX + 4, yPos + 4);
 
           // Category
           const catLabel = projectCategoryLabels[project.category] || project.category;
           pdf.setTextColor(...primaryColor);
           pdf.setFontSize(8);
-          const catX = pageWidth - margin - pdf.getTextWidth(catLabel) - 4;
-          pdf.text(catLabel, catX, yPos + 2);
+          const catX = textStartX + textWidth - pdf.getTextWidth(catLabel) - 4;
+          pdf.text(catLabel, catX, yPos + 4);
 
           yPos += 12;
 
@@ -302,8 +411,8 @@ export function PortfolioPDFExport() {
             pdf.setTextColor(...mutedColor);
             pdf.setFontSize(9);
             pdf.setFont("helvetica", "normal");
-            const descLines = pdf.splitTextToSize(project.description, contentWidth - 8);
-            pdf.text(descLines.slice(0, 3), margin + 4, yPos);
+            const descLines = pdf.splitTextToSize(project.description, textWidth - 8);
+            pdf.text(descLines.slice(0, 3), textStartX + 4, yPos);
             yPos += descLines.slice(0, 3).length * 4 + 2;
           }
 
@@ -311,7 +420,7 @@ export function PortfolioPDFExport() {
           if (project.tags && project.tags.length > 0) {
             pdf.setTextColor(...mutedColor);
             pdf.setFontSize(8);
-            pdf.text(`Tags: ${project.tags.join(", ")}`, margin + 4, yPos);
+            pdf.text(`Tags: ${project.tags.join(", ")}`, textStartX + 4, yPos);
             yPos += 5;
           }
 
@@ -320,19 +429,26 @@ export function PortfolioPDFExport() {
             pdf.setTextColor(...accentColor);
             pdf.setFontSize(8);
             const skillNames = project.skills.map(s => s.title).join(", ");
-            pdf.text(`Verknüpfte Kompetenzen: ${skillNames}`, margin + 4, yPos);
-            yPos += 5;
+            const skillText = pdf.splitTextToSize(`Verknüpfte Kompetenzen: ${skillNames}`, textWidth - 8);
+            pdf.text(skillText.slice(0, 2), textStartX + 4, yPos);
+            yPos += skillText.slice(0, 2).length * 4;
           }
 
           // Project URL
           if (project.project_url) {
             pdf.setTextColor(59, 130, 246);
             pdf.setFontSize(8);
-            pdf.text(`Link: ${project.project_url}`, margin + 4, yPos);
+            pdf.text(`Link: ${project.project_url}`, textStartX + 4, yPos);
             yPos += 5;
           }
 
-          yPos += 8;
+          // Ensure minimum height if image was taller
+          if (hasImage) {
+            const minYPos = projectStartY + 35;
+            if (yPos < minYPos) yPos = minYPos;
+          }
+
+          yPos += 10;
         }
       }
 
