@@ -3,9 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, ExternalLink, Eye, EyeOff } from "lucide-react";
+import { Plus, Edit, Trash2, ExternalLink, Eye, EyeOff, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ProjectDialog } from "@/components/portfolio/ProjectDialog";
+
+interface Skill {
+  id: string;
+  title: string;
+  category: string;
+}
 
 interface Project {
   id: string;
@@ -18,7 +24,16 @@ interface Project {
   featured: boolean;
   published: boolean;
   created_at: string;
+  skills?: Skill[];
 }
+
+const skillCategoryLabels: Record<string, string> = {
+  fachkompetenz: "Fachkompetenz",
+  methodenkompetenz: "Methodenkompetenz",
+  sozialkompetenz: "Sozialkompetenz",
+  selbstkompetenz: "Selbstkompetenz",
+  sonstiges: "Sonstiges",
+};
 
 const MyProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -36,14 +51,35 @@ const MyProjects = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
+      const { data: projectsData, error: projectsError } = await supabase
         .from("projects")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setProjects(data || []);
+      if (projectsError) throw projectsError;
+
+      // Fetch skills for each project
+      const projectsWithSkills = await Promise.all(
+        (projectsData || []).map(async (project) => {
+          const { data: skillLinks } = await supabase
+            .from("project_skills")
+            .select("skill_id")
+            .eq("project_id", project.id);
+
+          if (skillLinks && skillLinks.length > 0) {
+            const skillIds = skillLinks.map(sl => sl.skill_id);
+            const { data: skills } = await supabase
+              .from("skills")
+              .select("id, title, category")
+              .in("id", skillIds);
+            return { ...project, skills: skills || [] };
+          }
+          return { ...project, skills: [] };
+        })
+      );
+
+      setProjects(projectsWithSkills);
     } catch (error) {
       console.error("Error fetching projects:", error);
       toast({
@@ -202,6 +238,26 @@ const MyProjects = () => {
                     </Badge>
                   ))}
                 </div>
+
+                {project.skills && project.skills.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Link2 className="w-3 h-3" />
+                      Verknüpfte Kompetenzen
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {project.skills.map((skill) => (
+                        <Badge 
+                          key={skill.id} 
+                          variant="default" 
+                          className="text-xs"
+                        >
+                          {skill.title}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-2">
                   {project.project_url && (
