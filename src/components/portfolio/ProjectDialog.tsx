@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Project {
   id: string;
@@ -23,12 +24,27 @@ interface Project {
   published: boolean;
 }
 
+interface Skill {
+  id: string;
+  title: string;
+  category: string;
+  status: string;
+}
+
 interface ProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project: Project | null;
   onSuccess: () => void;
 }
+
+const skillCategoryLabels: Record<string, string> = {
+  fachkompetenz: "Fachkompetenz",
+  methodenkompetenz: "Methodenkompetenz",
+  sozialkompetenz: "Sozialkompetenz",
+  selbstkompetenz: "Selbstkompetenz",
+  sonstiges: "Sonstiges",
+};
 
 export function ProjectDialog({ open, onOpenChange, project, onSuccess }: ProjectDialogProps) {
   const [loading, setLoading] = useState(false);
@@ -44,7 +60,15 @@ export function ProjectDialog({ open, onOpenChange, project, onSuccess }: Projec
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
+  const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) {
+      fetchUserSkills();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (project) {
@@ -58,10 +82,43 @@ export function ProjectDialog({ open, onOpenChange, project, onSuccess }: Projec
       });
       setTags(project.tags || []);
       setImageUrl(project.image_url);
+      fetchProjectSkills(project.id);
     } else {
       resetForm();
     }
   }, [project, open]);
+
+  const fetchUserSkills = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("skills")
+        .select("id, title, category, status")
+        .eq("user_id", user.id)
+        .order("title");
+
+      if (error) throw error;
+      setAvailableSkills(data || []);
+    } catch (error) {
+      console.error("Error fetching skills:", error);
+    }
+  };
+
+  const fetchProjectSkills = async (projectId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("project_skills")
+        .select("skill_id")
+        .eq("project_id", projectId);
+
+      if (error) throw error;
+      setSelectedSkillIds(data?.map(ps => ps.skill_id) || []);
+    } catch (error) {
+      console.error("Error fetching project skills:", error);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -75,6 +132,15 @@ export function ProjectDialog({ open, onOpenChange, project, onSuccess }: Projec
     setTags([]);
     setTagInput("");
     setImageUrl(null);
+    setSelectedSkillIds([]);
+  };
+
+  const toggleSkill = (skillId: string) => {
+    setSelectedSkillIds(prev =>
+      prev.includes(skillId)
+        ? prev.filter(id => id !== skillId)
+        : [...prev, skillId]
+    );
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,6 +209,23 @@ export function ProjectDialog({ open, onOpenChange, project, onSuccess }: Projec
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
+  const updateProjectSkills = async (projectId: string) => {
+    // Delete existing skill links
+    await supabase
+      .from("project_skills")
+      .delete()
+      .eq("project_id", projectId);
+
+    // Insert new skill links
+    if (selectedSkillIds.length > 0) {
+      const skillLinks = selectedSkillIds.map(skillId => ({
+        project_id: projectId,
+        skill_id: skillId,
+      }));
+      await supabase.from("project_skills").insert(skillLinks);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim()) {
@@ -171,18 +254,27 @@ export function ProjectDialog({ open, onOpenChange, project, onSuccess }: Projec
         user_id: user.id,
       };
 
+      let projectId: string;
+
       if (project) {
         const { error } = await supabase
           .from("projects")
           .update(projectData)
           .eq("id", project.id);
         if (error) throw error;
+        projectId = project.id;
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("projects")
-          .insert([projectData]);
+          .insert([projectData])
+          .select("id")
+          .single();
         if (error) throw error;
+        projectId = data.id;
       }
+
+      // Update skill links
+      await updateProjectSkills(projectId);
 
       toast({
         title: "Erfolg",
@@ -331,6 +423,44 @@ export function ProjectDialog({ open, onOpenChange, project, onSuccess }: Projec
               </div>
             )}
           </div>
+
+          {/* Skills linking section */}
+          {availableSkills.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Link2 className="w-4 h-4" />
+                Verknüpfte Kompetenzen
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Wählen Sie Kompetenzen aus, die Sie mit diesem Projekt nachweisen.
+              </p>
+              <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+                {availableSkills.map((skill) => (
+                  <div key={skill.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`skill-${skill.id}`}
+                      checked={selectedSkillIds.includes(skill.id)}
+                      onCheckedChange={() => toggleSkill(skill.id)}
+                    />
+                    <label
+                      htmlFor={`skill-${skill.id}`}
+                      className="flex-1 text-sm cursor-pointer flex items-center gap-2"
+                    >
+                      {skill.title}
+                      <Badge variant="outline" className="text-xs">
+                        {skillCategoryLabels[skill.category] || skill.category}
+                      </Badge>
+                    </label>
+                  </div>
+                ))}
+              </div>
+              {selectedSkillIds.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedSkillIds.length} Kompetenz(en) ausgewählt
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="project_url">Projekt-URL</Label>
