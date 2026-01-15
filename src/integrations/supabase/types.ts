@@ -596,6 +596,42 @@ export type Database = {
           },
         ]
       }
+      project_skills: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          skill_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          skill_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_skills_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           category: Database["public"]["Enums"]["project_category"]
