@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Circle, Clock, Calendar, TrendingUp, Link as LinkIcon, Image as ImageIcon, File } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Calendar, TrendingUp, Link as LinkIcon, Image as ImageIcon, File, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Task {
   id: string;
@@ -18,6 +20,7 @@ interface Task {
   file_url: string | null;
   image_url: string | null;
   links: string[];
+  created_at: string;
 }
 
 const Tasks = () => {
@@ -25,6 +28,11 @@ const Tasks = () => {
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  // Filter states
+  const [statusFilter, setStatusFilter] = useState<string>("open");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -35,7 +43,7 @@ const Tasks = () => {
         .from("tasks")
         .select("*")
         .eq("assigned_to", user.id)
-        .order("due_date", { ascending: true });
+        .order("created_at", { ascending: false });
 
       if (error) {
         toast.error("Fehler beim Laden der Aufgaben");
@@ -48,6 +56,29 @@ const Tasks = () => {
 
     fetchTasks();
   }, []);
+
+  // Filtered tasks
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      // Status filter
+      if (statusFilter === "open" && task.status === "completed") return false;
+      if (statusFilter !== "all" && statusFilter !== "open" && task.status !== statusFilter) return false;
+      
+      // Priority filter
+      if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
+      
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesTitle = task.title.toLowerCase().includes(query);
+        const matchesDescription = task.description?.toLowerCase().includes(query);
+        const matchesCategory = task.category?.toLowerCase().includes(query);
+        if (!matchesTitle && !matchesDescription && !matchesCategory) return false;
+      }
+      
+      return true;
+    });
+  }, [tasks, statusFilter, priorityFilter, searchQuery]);
 
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
     const { error } = await supabase
@@ -116,15 +147,54 @@ const Tasks = () => {
         </CardContent>
       </Card>
 
+      {/* Filter Section */}
+      <Card className="shadow-card">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Aufgaben suchen..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Status</SelectItem>
+                <SelectItem value="open">Nicht erledigt</SelectItem>
+                <SelectItem value="in_progress">In Arbeit</SelectItem>
+                <SelectItem value="completed">Erledigt</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Priorität" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Prioritäten</SelectItem>
+                <SelectItem value="high">Hoch</SelectItem>
+                <SelectItem value="medium">Mittel</SelectItem>
+                <SelectItem value="low">Niedrig</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4">
-        {tasks.length === 0 ? (
+        {filteredTasks.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="p-8 text-center text-muted-foreground">
-              Noch keine Aufgaben vorhanden
+              {tasks.length === 0 ? "Noch keine Aufgaben vorhanden" : "Keine Aufgaben gefunden"}
             </CardContent>
           </Card>
         ) : (
-          tasks.map((task) => (
+          filteredTasks.map((task) => (
             <Card 
               key={task.id} 
               className="shadow-card hover:shadow-glow transition-all cursor-pointer"
