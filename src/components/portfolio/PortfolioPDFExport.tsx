@@ -199,30 +199,26 @@ export function PortfolioPDFExport() {
       pdf.setFillColor(...primaryColor);
       pdf.rect(0, 0, pageWidth, 55, "F");
 
-      // Add logo if available
+      // Add logo + QUIDZ text in top left corner
+      const logoSize = 18;
       if (logoBase64) {
         try {
-          pdf.addImage(logoBase64, "PNG", margin, 12, 35, 35);
+          pdf.addImage(logoBase64, "PNG", margin, 10, logoSize, logoSize);
         } catch (e) {
           console.warn("Could not add logo to PDF:", e);
-          // Fallback to text
-          pdf.setTextColor(255, 255, 255);
-          pdf.setFontSize(28);
-          pdf.setFont("helvetica", "bold");
-          pdf.text("QUIDZ", margin, 30);
         }
-      } else {
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFontSize(28);
-        pdf.setFont("helvetica", "bold");
-        pdf.text("QUIDZ", margin, 30);
       }
-
-      // Title text
+      
+      // QUIDZ text next to logo
       pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(12);
+      pdf.setFontSize(24);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("QUIDZ", margin + logoSize + 4, 23);
+
+      // Subtitle
+      pdf.setFontSize(11);
       pdf.setFont("helvetica", "normal");
-      pdf.text("Kompetenz-Portfolio", margin + (logoBase64 ? 40 : 0), 40);
+      pdf.text("Kompetenz-Portfolio", margin + logoSize + 4, 32);
 
       // Profile info on header with avatar
       if (profile) {
