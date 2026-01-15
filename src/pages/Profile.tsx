@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BadgeDisplay } from "@/components/badges/BadgeDisplay";
+import { PortfolioPDFExport } from "@/components/portfolio/PortfolioPDFExport";
 import { User, Mail, Save, LogOut, Lock, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
@@ -326,6 +327,9 @@ const Profile = () => {
 
       {/* Badges Section */}
       <BadgeDisplay badges={badges} showTitle={true} />
+
+      {/* Portfolio PDF Export */}
+      <PortfolioPDFExport />
 
       <Card className="shadow-card border-destructive/50">
         <CardHeader>
